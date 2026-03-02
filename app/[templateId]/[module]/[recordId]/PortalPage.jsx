@@ -1,8 +1,8 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 
-export default function PortalPage({ templateId, module, recordId }) {
+export default function PortalPage({ templateJson, crmRecord, submissionLog }) {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Header */}
@@ -24,8 +24,18 @@ export default function PortalPage({ templateId, module, recordId }) {
       </Box>
 
       {/* Page body */}
-      <Box sx={{ maxWidth: 800, mx: "auto", px: 2, py: 4 }}>
-        {/* TODO: Welcome section */}
+      <Box sx={{ maxWidth: 800, mx: "auto", px: 2, py: 2 }}>
+        {/* Welcome section */}
+        <Paper variant="outlined" sx={{ px: 3, py: 2, mb: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700}>
+            Welcome, {crmRecord?.Full_Name}!
+          </Typography>
+          {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Application: Johnson&apos;s Mortgage Application &nbsp;|&nbsp; Visa
+            Type: <strong>Work Visa</strong>
+          </Typography> */}
+        </Paper>
+
         {/* TODO: Document checklist */}
       </Box>
     </Box>
