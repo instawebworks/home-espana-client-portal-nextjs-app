@@ -1,8 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
+import DocumentItem from "@/components/DocumentItem";
 
 export default function PortalPage({ templateJson, crmRecord, submissionLog }) {
+  const documentRequirements = (templateJson?.documentRequirements ?? []).filter((doc) => doc.checked);
+  const [expandedId, setExpandedId] = useState(null);
+  const [filesByDoc, setFilesByDoc] = useState({});
+
+  function handleExpand(id) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleFilesChange(docId, updater) {
+    setFilesByDoc((prev) => ({ ...prev, [docId]: updater(prev[docId] ?? []) }));
+  }
+
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Header */}
@@ -30,13 +44,21 @@ export default function PortalPage({ templateJson, crmRecord, submissionLog }) {
           <Typography variant="subtitle1" fontWeight={700}>
             Welcome, {crmRecord?.Full_Name}!
           </Typography>
-          {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Application: Johnson&apos;s Mortgage Application &nbsp;|&nbsp; Visa
-            Type: <strong>Work Visa</strong>
-          </Typography> */}
         </Paper>
 
-        {/* TODO: Document checklist */}
+        {/* Document checklist */}
+        {documentRequirements.map((doc) => (
+          <DocumentItem
+            key={doc.id}
+            name={doc.name}
+            status="NOT SUBMITTED"
+            additionalInstructions={doc.additionalInstructions}
+            expanded={expandedId === doc.id}
+            onChange={() => handleExpand(doc.id)}
+            files={filesByDoc[doc.id] ?? []}
+            onFilesChange={(updater) => handleFilesChange(doc.id, updater)}
+          />
+        ))}
       </Box>
     </Box>
   );
