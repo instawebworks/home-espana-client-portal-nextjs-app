@@ -9,12 +9,17 @@ export default async function Page({ params }) {
 
   const submissionLogName = `${templateId}___${module}___${recordId}`;
 
-  // Fetch all three in parallel
-  const [templateRecord, crmRecord, submissionLog] = await Promise.all([
+  // Fetch template + CRM record + submission log search in parallel
+  const [templateRecord, crmRecord, submissionLogRef] = await Promise.all([
     getRecord(ZOHO_TEMPLATE_MODULE, templateId),
     getRecord(module, recordId),
     searchRecords(SUBMISSION_LOGS_MODULE, "Name", submissionLogName),
   ]);
+
+  // Search API doesn't return subform data — fetch full record by ID if found
+  const submissionLog = submissionLogRef
+    ? await getRecord(SUBMISSION_LOGS_MODULE, submissionLogRef.id)
+    : null;
 
   if (!templateRecord || !crmRecord) {
     notFound();
@@ -24,6 +29,9 @@ export default async function Page({ params }) {
 
   return (
     <PortalPage
+      templateId={templateId}
+      module={module}
+      recordId={recordId}
       templateJson={templateJson}
       crmRecord={crmRecord}
       submissionLog={submissionLog}

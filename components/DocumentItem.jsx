@@ -6,11 +6,23 @@ import {
   AccordionSummary,
   AccordionDetails,
   Box,
-  Typography,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   IconButton,
+  Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|gif|webp|bmp|svg)$/i;
+const PDF_EXTENSION = /\.pdf$/i;
+
+function getPreviewType(filename) {
+  if (IMAGE_EXTENSIONS.test(filename)) return "image";
+  if (PDF_EXTENSION.test(filename)) return "pdf";
+  return null;
+}
 
 const STATUS_COLORS = {
   "NOT SUBMITTED": "#9ca3af",
@@ -19,9 +31,25 @@ const STATUS_COLORS = {
   REJECTED: "#dc2626",
 };
 
-export default function DocumentItem({ name, status = "NOT SUBMITTED", additionalInstructions, expanded = false, onChange, files = [], onFilesChange }) {
+export default function DocumentItem({
+  name,
+  status = "NOT SUBMITTED",
+  additionalInstructions,
+  expanded = false,
+  onChange,
+  files = [],
+  onFilesChange,
+  previousUploads = [],
+  submissionLogId,
+}) {
   const [dragging, setDragging] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null); // { name, url }
   const inputRef = useRef(null);
+
+  function handleUploadClick(upload) {
+    const url = `/api/attachment?submissionLogId=${submissionLogId}&attachmentId=${upload.Attachment_ID}`;
+    setPreviewFile({ name: upload.Document_Name, url });
+  }
 
   function addFiles(newFiles) {
     const fileArray = Array.from(newFiles);
@@ -54,7 +82,14 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
       }}
     >
       <AccordionSummary sx={{ px: 3, py: 1.5, minHeight: "unset" }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <Typography fontWeight={700}>{name}</Typography>
           <Typography
             fontWeight={700}
@@ -84,7 +119,11 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
             <Typography
               variant="caption"
               fontWeight={700}
-              sx={{ color: "#2563eb", textTransform: "uppercase", letterSpacing: 1 }}
+              sx={{
+                color: "#2563eb",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
             >
               What to Upload
             </Typography>
@@ -94,7 +133,65 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
           </Box>
         )}
 
-        {/* Uploaded files */}
+        {/* Previously uploaded files (from CRM) */}
+        {previousUploads.length > 0 && (
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Previously Uploaded Files
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+              {previousUploads.map((upload) => (
+                <Box
+                  key={upload.Attachment_ID}
+                  onClick={() => handleUploadClick(upload)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    px: 1.5,
+                    py: 1,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    bgcolor: "white",
+                    cursor: "pointer",
+                    "&:hover": {
+                      borderColor: "primary.main",
+                      bgcolor: "#f8faff",
+                    },
+                  }}
+                >
+                  <InsertDriveFileOutlinedIcon
+                    sx={{
+                      fontSize: 18,
+                      color: "text.secondary",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {upload.Document_Name}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "primary.main", flexShrink: 0 }}
+                  >
+                    View
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* Uploaded files (staged for new submission) */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Uploaded Files
         </Typography>
@@ -105,7 +202,15 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
               const isImage = file.type.startsWith("image/");
               const url = isImage ? URL.createObjectURL(file) : null;
               return (
-                <Box key={i} sx={{ position: "relative", width: 80, height: 80, flexShrink: 0 }}>
+                <Box
+                  key={i}
+                  sx={{
+                    position: "relative",
+                    width: 80,
+                    height: 80,
+                    flexShrink: 0,
+                  }}
+                >
                   {isImage ? (
                     <Box
                       component="img"
@@ -138,7 +243,9 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
                         px: 0.5,
                       }}
                     >
-                      <InsertDriveFileOutlinedIcon sx={{ color: "text.secondary", fontSize: 28, mb: 0.5 }} />
+                      <InsertDriveFileOutlinedIcon
+                        sx={{ color: "text.secondary", fontSize: 28, mb: 0.5 }}
+                      />
                       <Typography
                         variant="caption"
                         sx={{
@@ -181,7 +288,10 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
         {/* Drop zone */}
         <Box
           onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           sx={{
@@ -207,9 +317,86 @@ export default function DocumentItem({ name, status = "NOT SUBMITTED", additiona
           type="file"
           multiple
           style={{ display: "none" }}
-          onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
       </AccordionDetails>
+
+      {/* File preview dialog */}
+      <Dialog
+        open={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        maxWidth="lg"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx:
+              getPreviewType(previewFile?.name) !== null
+                ? { height: "90vh" }
+                : {},
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            py: 1.5,
+            fontWeight: 700,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {previewFile?.name}
+          <IconButton size="small" onClick={() => setPreviewFile(null)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, overflow: "hidden", display: "flex" }}>
+          {previewFile && getPreviewType(previewFile.name) === "image" && (
+            <Box
+              component="img"
+              src={previewFile.url}
+              alt={previewFile.name}
+              sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          )}
+          {previewFile && getPreviewType(previewFile.name) === "pdf" && (
+            <Box
+              component="iframe"
+              src={previewFile.url}
+              title={previewFile.name}
+              sx={{ width: "100%", height: "100%", border: "none" }}
+            />
+          )}
+          {previewFile && getPreviewType(previewFile.name) === null && (
+            <Box
+              sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+                color: "text.secondary",
+                p: 4,
+              }}
+            >
+              <InsertDriveFileOutlinedIcon sx={{ fontSize: 48 }} />
+              <Typography variant="body1" fontWeight={600}>
+                Preview not available
+              </Typography>
+              <Typography variant="body2" textAlign="center">
+                Only image and PDF files can be previewed.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Accordion>
   );
 }
