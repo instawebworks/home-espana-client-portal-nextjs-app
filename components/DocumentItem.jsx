@@ -31,6 +31,12 @@ const STATUS_COLORS = {
   REJECTED: "#dc2626",
 };
 
+const APPROVAL_COLORS = {
+  Pending: "#f59e0b",
+  Approved: "#16a34a",
+  Rejected: "#dc2626",
+};
+
 export default function DocumentItem({
   name,
   status = "NOT SUBMITTED",
@@ -140,53 +146,85 @@ export default function DocumentItem({
               Previously Uploaded Files
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-              {previousUploads.map((upload) => (
-                <Box
-                  key={upload.Attachment_ID}
-                  onClick={() => handleUploadClick(upload)}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 1.5,
-                    py: 1,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    bgcolor: "white",
-                    cursor: "pointer",
-                    "&:hover": {
-                      borderColor: "primary.main",
-                      bgcolor: "#f8faff",
-                    },
-                  }}
-                >
-                  <InsertDriveFileOutlinedIcon
-                    sx={{
-                      fontSize: 18,
-                      color: "text.secondary",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      flex: 1,
-                    }}
-                  >
-                    {upload.Document_Name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: "primary.main", flexShrink: 0 }}
-                  >
-                    View
-                  </Typography>
-                </Box>
-              ))}
+              {previousUploads.map((upload) => {
+                const isRejected = upload.Approval_Status === "Rejected";
+                return (
+                  <Box key={upload.Attachment_ID}>
+                    <Box
+                      onClick={() => handleUploadClick(upload)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.5,
+                        py: 1,
+                        border: "1px solid",
+                        borderColor: isRejected ? "#fca5a5" : "divider",
+                        borderRadius: isRejected && upload.Admin_Comment ? "8px 8px 0 0" : 1,
+                        bgcolor: isRejected ? "#fff8f8" : "white",
+                        cursor: "pointer",
+                        "&:hover": {
+                          borderColor: isRejected ? "#f87171" : "primary.main",
+                          bgcolor: isRejected ? "#fff0f0" : "#f8faff",
+                        },
+                      }}
+                    >
+                      <InsertDriveFileOutlinedIcon
+                        sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0 }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          flex: 1,
+                        }}
+                      >
+                        {upload.Document_Name}
+                      </Typography>
+                      {upload.Approval_Status && (
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          sx={{
+                            color: APPROVAL_COLORS[upload.Approval_Status] ?? "#9ca3af",
+                            flexShrink: 0,
+                            textTransform: "uppercase",
+                            fontSize: "0.7rem",
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          {upload.Approval_Status}
+                        </Typography>
+                      )}
+                    </Box>
+                    {isRejected && upload.Admin_Comment && (
+                      <Box
+                        sx={{
+                          px: 1.5,
+                          py: 1,
+                          border: "1px solid #fca5a5",
+                          borderTop: "none",
+                          borderRadius: "0 0 8px 8px",
+                          bgcolor: "#fef2f2",
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          sx={{ color: "#dc2626", textTransform: "uppercase", letterSpacing: 0.5 }}
+                        >
+                          Admin Comment
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 0.25, color: "#7f1d1d" }}>
+                          {upload.Admin_Comment}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
             </Box>
           </Box>
         )}

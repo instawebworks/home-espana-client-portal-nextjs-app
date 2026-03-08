@@ -9,7 +9,8 @@ import DocumentItem from "@/components/DocumentItem";
 function getDocStatus(docName, documentUploads) {
   const rows = (documentUploads ?? []).filter((r) => r.Document_Type === docName);
   if (rows.length === 0) return "NOT SUBMITTED";
-  if (rows.some((r) => r.Approval_Status === "Rejected")) return "REJECTED";
+  if (rows.some((r) => r.Approval_Status === "Pending")) return "PENDING";
+  if (rows.every((r) => r.Approval_Status === "Rejected")) return "REJECTED";
   if (rows.every((r) => r.Approval_Status === "Approved")) return "APPROVED";
   return "PENDING";
 }

@@ -75,7 +75,7 @@ export default function LoginForm({ templateId, module, recordId }) {
       >
         {/* Logo */}
         <Image
-          src="/logo.png"
+          src="/image.png"
           alt="Home Espana"
           width={160}
           height={100}
