@@ -47,10 +47,22 @@ export default function DocumentItem({
   onFilesChange,
   previousUploads = [],
   submissionLogId,
+  fileTypes = [],
 }) {
   const [dragging, setDragging] = useState(false);
   const [previewFile, setPreviewFile] = useState(null); // { name, url }
+  const [fileWarning, setFileWarning] = useState(null);
   const inputRef = useRef(null);
+
+  // Build allowed extensions set (lowercased) from fileTypes e.g. ["PDF","PNG","JPG"]
+  const allowedExts = fileTypes.length > 0
+    ? new Set(fileTypes.map((t) => t.toLowerCase()))
+    : null;
+
+  // Build accept string for the file input e.g. ".pdf,.png,.jpg"
+  const acceptStr = allowedExts
+    ? fileTypes.map((t) => `.${t.toLowerCase()}`).join(",")
+    : undefined;
 
   function handleUploadClick(upload) {
     const url = `/api/attachment?submissionLogId=${submissionLogId}&attachmentId=${upload.Attachment_ID}`;
@@ -59,7 +71,28 @@ export default function DocumentItem({
 
   function addFiles(newFiles) {
     const fileArray = Array.from(newFiles);
-    onFilesChange((prev) => [...prev, ...fileArray]);
+    if (!allowedExts) {
+      onFilesChange((prev) => [...prev, ...fileArray]);
+      return;
+    }
+    const accepted = [];
+    const rejected = [];
+    for (const file of fileArray) {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext && allowedExts.has(ext)) {
+        accepted.push(file);
+      } else {
+        rejected.push(file.name);
+      }
+    }
+    if (accepted.length > 0) {
+      onFilesChange((prev) => [...prev, ...accepted]);
+    }
+    if (rejected.length > 0) {
+      setFileWarning(
+        `Only ${fileTypes.join(", ")} files are allowed. Rejected: ${rejected.join(", ")}`
+      );
+    }
   }
 
   function removeFile(index) {
@@ -69,6 +102,7 @@ export default function DocumentItem({
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
+    setFileWarning(null);
     addFiles(e.dataTransfer.files);
   }
 
@@ -350,12 +384,20 @@ export default function DocumentItem({
           </Typography>
         </Box>
 
+        {fileWarning && (
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            {fileWarning}
+          </Typography>
+        )}
+
         <input
           ref={inputRef}
           type="file"
           multiple
+          accept={acceptStr}
           style={{ display: "none" }}
           onChange={(e) => {
+            setFileWarning(null);
             addFiles(e.target.files);
             e.target.value = "";
           }}

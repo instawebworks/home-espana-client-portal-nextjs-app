@@ -25,7 +25,9 @@ export default async function Page({ params }) {
     notFound();
   }
 
-  const templateJson = JSON.parse(templateRecord.Template_JSON);
+  const templateJson = crmRecord.Additional_Template_JSON
+    ? JSON.parse(crmRecord.Additional_Template_JSON)
+    : JSON.parse(templateRecord.Template_JSON);
 
   return (
     <PortalPage

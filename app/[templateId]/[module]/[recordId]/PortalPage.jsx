@@ -146,7 +146,7 @@ export default function PortalPage({
         {/* Welcome section */}
         <Paper variant="outlined" sx={{ px: 3, py: 2, mb: 3 }}>
           <Typography variant="subtitle1" fontWeight={700}>
-            Welcome, {crmRecord?.Full_Name}!
+            Welcome, {crmRecord?.Full_Name || crmRecord?.Contact_Name?.name || crmRecord?.Deal_Name || ""}!
           </Typography>
         </Paper>
 
@@ -163,6 +163,7 @@ export default function PortalPage({
             onFilesChange={(updater) => handleFilesChange(doc.id, updater)}
             previousUploads={(currentLog?.Document_Uploads ?? []).filter((u) => u.Document_Type === doc.name)}
             submissionLogId={currentLog?.id}
+            fileTypes={doc.fileTypes ?? []}
           />
         ))}
 
