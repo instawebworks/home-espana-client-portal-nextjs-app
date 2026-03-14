@@ -9,7 +9,7 @@ export default async function Page({ params }) {
 
   const submissionLogName = `${templateId}___${module}___${recordId}`;
 
-  // Fetch template + CRM record + submission log search in parallel
+  // Fetch template + CRM record + submission log search in parallel =>
   const [templateRecord, crmRecord, submissionLogRef] = await Promise.all([
     getRecord(ZOHO_TEMPLATE_MODULE, templateId),
     getRecord(module, recordId),
