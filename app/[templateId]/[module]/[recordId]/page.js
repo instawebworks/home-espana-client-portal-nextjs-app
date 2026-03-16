@@ -16,7 +16,7 @@ export default async function Page({ params }) {
     searchRecords(SUBMISSION_LOGS_MODULE, "Name", submissionLogName),
   ]);
 
-  // Search API doesn't return subform data — fetch full record by ID if found
+  // Search API doesn't return subform data — fetch full record by ID if found =>
   const submissionLog = submissionLogRef
     ? await getRecord(SUBMISSION_LOGS_MODULE, submissionLogRef.id)
     : null;
