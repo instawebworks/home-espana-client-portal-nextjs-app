@@ -47,9 +47,15 @@ export async function POST(request) {
       ...newUploads,
     ];
 
+    // Build push notification text: uploaded file names with timestamp
+    const now = new Date();
+    const docNames = newUploads.map((u) => u.Document_Name).join(" ## ");
+    const pushNotification = `${docNames} ## ${toZohoDatetime(now)}`;
+
     await updateRecord(SUBMISSION_LOGS_MODULE, submissionLogId, {
       Document_Uploads: documentUploads,
-      Last_Updated: toZohoDatetime(new Date()),
+      Last_Updated: toZohoDatetime(now),
+      Client_Push_Notification: pushNotification,
     });
 
     return Response.json({ success: true });

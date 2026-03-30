@@ -173,6 +173,7 @@ export default function PortalPage({
             Additional Note (Optional)
           </Typography>
           <TextField
+            id="additional-note"
             multiline
             rows={4}
             fullWidth
