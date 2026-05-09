@@ -39,13 +39,13 @@ export default function LoginForm({ templateId, module, recordId }) {
 
       if (!res.ok) {
         setError(data.error || "Something went wrong. Please try again.");
+        setLoading(false);
         return;
       }
 
       router.push(`/${templateId}/${module}/${recordId}`);
     } catch {
       setError("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   }

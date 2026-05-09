@@ -4,14 +4,22 @@ import { useState } from "react";
 import { Alert, Box, Button, Paper, Snackbar, TextField, Typography } from "@mui/material";
 import DocumentItem from "@/components/DocumentItem";
 
-// Derives status for a document type from the Document_Uploads subform rows.
-// Priority: Rejected > Pending > Approved > NOT SUBMITTED
-function getDocStatus(docName, documentUploads) {
+function getDocStatus(docName, documentUploads, scanType) {
   const rows = (documentUploads ?? []).filter((r) => r.Document_Type === docName);
   if (rows.length === 0) return "NOT SUBMITTED";
+
+  let approved;
+  if (scanType === "Front & Back") {
+    const frontApproved = rows.filter((r) => r.Scan_Type === "Front").some((r) => r.Approval_Status === "Approved");
+    const backApproved = rows.filter((r) => r.Scan_Type === "Back").some((r) => r.Approval_Status === "Approved");
+    approved = frontApproved && backApproved;
+  } else {
+    approved = rows.some((r) => r.Approval_Status === "Approved");
+  }
+
+  if (approved) return "APPROVED";
   if (rows.some((r) => r.Approval_Status === "Pending")) return "PENDING";
   if (rows.every((r) => r.Approval_Status === "Rejected")) return "REJECTED";
-  if (rows.every((r) => r.Approval_Status === "Approved")) return "APPROVED";
   return "PENDING";
 }
 
@@ -38,17 +46,24 @@ export default function PortalPage({
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
-  function handleFilesChange(docId, updater) {
+  function handleSlotChange(docId, slot, updater) {
     setFilesByDoc((prev) => {
-      const updated = { ...prev, [docId]: updater(prev[docId] ?? []) };
-      const totalFiles = Object.values(updated).reduce((sum, arr) => sum + arr.length, 0);
+      const docSlots = prev[docId] ?? {};
+      const updated = { ...prev, [docId]: { ...docSlots, [slot]: updater(docSlots[slot] ?? []) } };
+      const totalFiles = Object.values(updated).reduce(
+        (sum, slots) => sum + Object.values(slots).reduce((s, arr) => s + arr.length, 0),
+        0
+      );
       if (totalFiles > 0) setSubmitError(null);
       return updated;
     });
   }
 
   async function handleSubmit() {
-    const totalFiles = Object.values(filesByDoc).reduce((sum, arr) => sum + arr.length, 0);
+    const totalFiles = Object.values(filesByDoc).reduce(
+      (sum, slots) => sum + Object.values(slots).reduce((s, arr) => s + arr.length, 0),
+      0
+    );
     const hasNote = note.trim().length > 0;
     if (totalFiles === 0 && !hasNote) {
       setSubmitError("Please attach at least one file or add a note before submitting.");
@@ -84,9 +99,12 @@ export default function PortalPage({
 
       const metadata = [];
       for (const doc of documentRequirements) {
-        for (const file of filesByDoc[doc.id] ?? []) {
-          uploadFormData.append("file", file);
-          metadata.push({ docName: doc.name });
+        const slots = filesByDoc[doc.id] ?? {};
+        for (const [scanType, files] of Object.entries(slots)) {
+          for (const file of files) {
+            uploadFormData.append("file", file);
+            metadata.push({ docName: doc.name, scanType });
+          }
         }
       }
       uploadFormData.append("metadata", JSON.stringify(metadata));
@@ -129,7 +147,7 @@ export default function PortalPage({
           bgcolor: "white",
           borderBottom: "1px solid",
           borderColor: "divider",
-          py: 4,
+          py: 2,
           textAlign: "center",
         }}
       >
@@ -155,12 +173,14 @@ export default function PortalPage({
           <DocumentItem
             key={doc.id}
             name={doc.name}
-            status={getDocStatus(doc.name, currentLog?.Document_Uploads)}
+            requirement={doc.requirement}
+            scanType={doc.scanType}
+            status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType)}
             additionalInstructions={doc.additionalInstructions}
             expanded={expandedId === doc.id}
             onChange={() => handleExpand(doc.id)}
-            files={filesByDoc[doc.id] ?? []}
-            onFilesChange={(updater) => handleFilesChange(doc.id, updater)}
+            fileSlots={filesByDoc[doc.id] ?? {}}
+            onSlotChange={(slot, updater) => handleSlotChange(doc.id, slot, updater)}
             previousUploads={(currentLog?.Document_Uploads ?? []).filter((u) => u.Document_Type === doc.name)}
             submissionLogId={currentLog?.id}
             fileTypes={doc.fileTypes ?? []}

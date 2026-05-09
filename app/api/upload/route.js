@@ -37,6 +37,7 @@ export async function POST(request) {
         Document_Name: file.name,
         Attachment_ID: attachmentId,
         Document_Type: metadata[i].docName,
+        Scan_Type: metadata[i].scanType,
         Approval_Status: "Pending",
       });
     }
