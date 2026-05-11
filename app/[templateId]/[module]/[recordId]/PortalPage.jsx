@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Box, Button, Paper, Snackbar, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Snackbar, Tab, Tabs, Typography } from "@mui/material";
 import DocumentItem from "@/components/DocumentItem";
+import MessagesPanel from "@/components/MessagesPanel";
 
 function getDocStatus(docName, documentUploads, scanType) {
   const rows = (documentUploads ?? []).filter((r) => r.Document_Type === docName);
@@ -30,16 +31,24 @@ export default function PortalPage({
   templateJson,
   crmRecord,
   submissionLog,
+  initialNotes = [],
 }) {
   const documentRequirements = (
     templateJson?.documentRequirements ?? []
   ).filter((doc) => doc.checked);
+
+  const clientName =
+    crmRecord?.Full_Name ||
+    crmRecord?.Contact_Name?.name ||
+    crmRecord?.Deal_Name ||
+    "You";
+
+  const [tab, setTab] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [filesByDoc, setFilesByDoc] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [currentLog, setCurrentLog] = useState(submissionLog);
-  const [note, setNote] = useState("");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   function handleExpand(id) {
@@ -64,9 +73,8 @@ export default function PortalPage({
       (sum, slots) => sum + Object.values(slots).reduce((s, arr) => s + arr.length, 0),
       0
     );
-    const hasNote = note.trim().length > 0;
-    if (totalFiles === 0 && !hasNote) {
-      setSubmitError("Please attach at least one file or add a note before submitting.");
+    if (totalFiles === 0) {
+      setSubmitError("Please attach at least one file before submitting.");
       return;
     }
     setSubmitError(null);
@@ -118,22 +126,12 @@ export default function PortalPage({
         return;
       }
 
-      // Step 3: create note if provided
-      if (note.trim()) {
-        await fetch("/api/note", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ submissionLogId: data.submissionLogId, content: note.trim() }),
-        });
-        setNote("");
-      }
-
-      // Step 4: clear files, then re-fetch the updated submission log
+      // Step 3: clear files, then re-fetch the updated submission log
       setFilesByDoc({});
       const logRes = await fetch(`/api/submission-log?id=${data.submissionLogId}`);
       const logData = await logRes.json();
       if (logRes.ok) setCurrentLog(logData.record);
-      setSnackbar({ open: true, message: "Submission successful!", severity: "success" });
+      setSnackbar({ open: true, message: "Documents submitted successfully!", severity: "success" });
     } finally {
       setSubmitting(false);
     }
@@ -162,68 +160,74 @@ export default function PortalPage({
       {/* Page body */}
       <Box sx={{ maxWidth: 800, mx: "auto", px: 2, py: 2 }}>
         {/* Welcome section */}
-        <Paper variant="outlined" sx={{ px: 3, py: 2, mb: 3 }}>
+        <Paper variant="outlined" sx={{ px: 3, py: 2, mb: 2.5 }}>
           <Typography variant="subtitle1" fontWeight={700}>
-            Welcome, {crmRecord?.Full_Name || crmRecord?.Contact_Name?.name || crmRecord?.Deal_Name || ""}!
+            Welcome, {clientName}!
           </Typography>
         </Paper>
 
-        {/* Document checklist */}
-        {documentRequirements.map((doc) => (
-          <DocumentItem
-            key={doc.id}
-            name={doc.name}
-            requirement={doc.requirement}
-            scanType={doc.scanType}
-            status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType)}
-            additionalInstructions={doc.additionalInstructions}
-            expanded={expandedId === doc.id}
-            onChange={() => handleExpand(doc.id)}
-            fileSlots={filesByDoc[doc.id] ?? {}}
-            onSlotChange={(slot, updater) => handleSlotChange(doc.id, slot, updater)}
-            previousUploads={(currentLog?.Document_Uploads ?? []).filter((u) => u.Document_Type === doc.name)}
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2.5 }}>
+          <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+            <Tab label="Documents" />
+            <Tab label="Messages" />
+          </Tabs>
+        </Box>
+
+        {/* Documents tab */}
+        {tab === 0 && (
+          <>
+            {documentRequirements.map((doc) => (
+              <DocumentItem
+                key={doc.id}
+                name={doc.name}
+                requirement={doc.requirement}
+                scanType={doc.scanType}
+                status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType)}
+                additionalInstructions={doc.additionalInstructions}
+                expanded={expandedId === doc.id}
+                onChange={() => handleExpand(doc.id)}
+                fileSlots={filesByDoc[doc.id] ?? {}}
+                onSlotChange={(slot, updater) => handleSlotChange(doc.id, slot, updater)}
+                previousUploads={(currentLog?.Document_Uploads ?? []).filter((u) => u.Document_Type === doc.name)}
+                submissionLogId={currentLog?.id}
+                fileTypes={doc.fileTypes ?? []}
+              />
+            ))}
+
+            <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
+              {submitError && (
+                <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>
+                  {submitError}
+                </Typography>
+              )}
+              <Button
+                variant="contained"
+                size="large"
+                sx={{ px: 5 }}
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Submitting..." : "Submit Documents"}
+              </Button>
+            </Box>
+          </>
+        )}
+
+        {/* Messages tab — always mounted so initialNotes state is preserved */}
+        <Box sx={{ display: tab === 1 ? "block" : "none" }}>
+          <MessagesPanel
             submissionLogId={currentLog?.id}
-            fileTypes={doc.fileTypes ?? []}
+            templateId={templateId}
+            module={module}
+            recordId={recordId}
+            clientName={clientName}
+            initialNotes={initialNotes}
+            onLogCreated={(id) => setCurrentLog((prev) => prev ?? { id, Document_Uploads: [] })}
           />
-        ))}
-
-        {/* Additional note */}
-        <Paper variant="outlined" sx={{ px: 3, py: 2.5, mt: 1 }}>
-          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5 }}>
-            Additional Note (Optional)
-          </Typography>
-          <TextField
-            id="additional-note"
-            multiline
-            rows={4}
-            fullWidth
-            placeholder="Add any notes or comments..."
-            value={note}
-            onChange={(e) => {
-              setNote(e.target.value);
-              if (e.target.value.trim()) setSubmitError(null);
-            }}
-          />
-        </Paper>
-
-        {/* Submit */}
-        <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
-          {submitError && (
-            <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>
-              {submitError}
-            </Typography>
-          )}
-          <Button
-            variant="contained"
-            size="large"
-            sx={{ px: 5 }}
-            onClick={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? "Submitting..." : "Submit Documents"}
-          </Button>
         </Box>
       </Box>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={5000}
