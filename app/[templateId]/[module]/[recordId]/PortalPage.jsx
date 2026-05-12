@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Alert, Box, Button, Paper, Snackbar, Tab, Tabs, Typography } from "@mui/material";
+import LockResetIcon from "@mui/icons-material/LockReset";
 import DocumentItem from "@/components/DocumentItem";
 import MessagesPanel from "@/components/MessagesPanel";
 
@@ -43,6 +45,7 @@ export default function PortalPage({
     crmRecord?.Deal_Name ||
     "You";
 
+  const router = useRouter();
   const [tab, setTab] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [filesByDoc, setFilesByDoc] = useState({});
@@ -147,14 +150,24 @@ export default function PortalPage({
           borderColor: "divider",
           py: 2,
           textAlign: "center",
+          position: "relative",
         }}
       >
         <Typography variant="h4" fontWeight={700} color="text.primary">
-          Document Upload Portal
+          Hipoteken Document Portal
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
           Please upload / review the required documents below
         </Typography>
+        <Button
+          size="small"
+          startIcon={<LockResetIcon />}
+          onClick={() => router.push(`/${templateId}/${module}/${recordId}/change-password`)}
+          variant="outlined"
+          sx={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)" }}
+        >
+          Change Password
+        </Button>
       </Box>
 
       {/* Page body */}

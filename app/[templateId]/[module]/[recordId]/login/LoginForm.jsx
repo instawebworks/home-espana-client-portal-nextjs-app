@@ -86,7 +86,7 @@ export default function LoginForm({ templateId, module, recordId }) {
         {/* Heading */}
         <Box sx={{ textAlign: "center", mt: 1 }}>
           <Typography variant="h5" fontWeight={700} color="primary">
-            Document Upload Portal
+            Hipoteken Document Portal
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Sign in to access your documents

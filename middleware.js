@@ -27,8 +27,9 @@ export async function middleware(request) {
 
   const isPortalPage = segments.length === 3;
   const isLoginPage = segments.length === 4 && segments[3] === "login";
+  const isChangePwPage = segments.length === 4 && segments[3] === "change-password";
 
-  if (!isPortalPage && !isLoginPage) {
+  if (!isPortalPage && !isLoginPage && !isChangePwPage) {
     return NextResponse.next();
   }
 
@@ -36,9 +37,9 @@ export async function middleware(request) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await getValidSession(token, templateId, module, recordId) : null;
 
-  // Portal page: must have a valid session
-  if (isPortalPage && !session) {
-    return NextResponse.redirect(new URL(`${pathname}/login`, request.url));
+  // Portal page and change-password page: must have a valid session
+  if ((isPortalPage || isChangePwPage) && !session) {
+    return NextResponse.redirect(new URL(`/${templateId}/${module}/${recordId}/login`, request.url));
   }
 
   // Login page: redirect away if already authenticated

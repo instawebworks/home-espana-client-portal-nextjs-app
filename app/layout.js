@@ -2,7 +2,7 @@ import "./globals.css";
 import ThemeRegistry from "@/components/ThemeRegistry";
 
 export const metadata = {
-  title: "Home Espana Client Portal",
+  title: "Hipoteken Document Portal",
   description: "Document upload portal for Home Espana clients",
 };
 
