@@ -372,7 +372,7 @@ export default function DocumentItem({
                   lineHeight: 1.4,
                 }}
               >
-                {requirement}
+                {requirement === "Optional" ? "If Applicable" : requirement}
               </Box>
             )}
           </Box>
