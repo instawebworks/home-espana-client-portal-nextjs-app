@@ -6,24 +6,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   Box,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
-
-const IMAGE_EXTENSIONS = /\.(jpe?g|png|gif|webp|bmp|svg)$/i;
-const PDF_EXTENSION = /\.pdf$/i;
-
-function getPreviewType(filename) {
-  if (IMAGE_EXTENSIONS.test(filename)) return "image";
-  if (PDF_EXTENSION.test(filename)) return "pdf";
-  return null;
-}
 
 const STATUS_COLORS = {
   "NOT SUBMITTED": "#9ca3af",
@@ -45,8 +33,6 @@ function UploadZone({
   acceptStr,
   fileTypes,
   previousUploads,
-  submissionLogId,
-  onPreview,
   approved,
 }) {
   const [dragging, setDragging] = useState(false);
@@ -95,10 +81,6 @@ function UploadZone({
               return (
                 <Box key={upload.Attachment_ID}>
                   <Box
-                    onClick={() => {
-                      const url = `/api/attachment?submissionLogId=${submissionLogId}&attachmentId=${upload.Attachment_ID}`;
-                      onPreview({ name: upload.Document_Name, url });
-                    }}
                     sx={{
                       display: "flex",
                       alignItems: "center",
@@ -109,11 +91,6 @@ function UploadZone({
                       borderColor: isRejected ? "#fca5a5" : "divider",
                       borderRadius: isRejected && upload.Admin_Comment ? "8px 8px 0 0" : 1,
                       bgcolor: isRejected ? "#fff8f8" : "white",
-                      cursor: "pointer",
-                      "&:hover": {
-                        borderColor: isRejected ? "#f87171" : "primary.main",
-                        bgcolor: isRejected ? "#fff0f0" : "#f8faff",
-                      },
                     }}
                   >
                     <InsertDriveFileOutlinedIcon sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0 }} />
@@ -314,11 +291,8 @@ export default function DocumentItem({
   fileSlots = {},
   onSlotChange,
   previousUploads = [],
-  submissionLogId,
   fileTypes = [],
 }) {
-  const [previewFile, setPreviewFile] = useState(null);
-
   const allowedExts =
     fileTypes.length > 0 ? new Set(fileTypes.map((t) => t.toLowerCase())) : null;
   const acceptStr = allowedExts
@@ -440,8 +414,6 @@ export default function DocumentItem({
                   acceptStr={acceptStr}
                   fileTypes={fileTypes}
                   previousUploads={slotUploads}
-                  submissionLogId={submissionLogId}
-                  onPreview={setPreviewFile}
                   approved={slotApproved}
                 />
               </Box>
@@ -455,82 +427,11 @@ export default function DocumentItem({
             acceptStr={acceptStr}
             fileTypes={fileTypes}
             previousUploads={previousUploads}
-            submissionLogId={submissionLogId}
-            onPreview={setPreviewFile}
             approved={previousUploads.some((u) => u.Approval_Status === "Approved")}
           />
         )}
       </AccordionDetails>
 
-      <Dialog
-        open={!!previewFile}
-        onClose={() => setPreviewFile(null)}
-        maxWidth="lg"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: getPreviewType(previewFile?.name) !== null ? { height: "90vh" } : {},
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            py: 1.5,
-            fontWeight: 700,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {previewFile?.name}
-          <IconButton size="small" onClick={() => setPreviewFile(null)}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, overflow: "hidden", display: "flex" }}>
-          {previewFile && getPreviewType(previewFile.name) === "image" && (
-            <Box
-              component="img"
-              src={previewFile.url}
-              alt={previewFile.name}
-              sx={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
-          )}
-          {previewFile && getPreviewType(previewFile.name) === "pdf" && (
-            <Box
-              component="iframe"
-              src={previewFile.url}
-              title={previewFile.name}
-              sx={{ width: "100%", height: "100%", border: "none" }}
-            />
-          )}
-          {previewFile && getPreviewType(previewFile.name) === null && (
-            <Box
-              sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1,
-                color: "text.secondary",
-                p: 4,
-              }}
-            >
-              <InsertDriveFileOutlinedIcon sx={{ fontSize: 48 }} />
-              <Typography variant="body1" fontWeight={600}>
-                Preview not available
-              </Typography>
-              <Typography variant="body2" textAlign="center">
-                Only image and PDF files can be previewed.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
     </Accordion>
   );
 }

@@ -203,7 +203,6 @@ export default function PortalPage({
                 fileSlots={filesByDoc[doc.id] ?? {}}
                 onSlotChange={(slot, updater) => handleSlotChange(doc.id, slot, updater)}
                 previousUploads={(currentLog?.Document_Uploads ?? []).filter((u) => u.Document_Type === doc.name)}
-                submissionLogId={currentLog?.id}
                 fileTypes={doc.fileTypes ?? []}
               />
             ))}
