@@ -1,31 +1,38 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getRecord, getNotes, searchRecords, ZOHO_TEMPLATE_MODULE } from "@/lib/zoho/crm";
 import PortalPage from "./PortalPage";
 
 export const SUBMISSION_LOGS_MODULE = "Submission_Logs";
 
-export default async function Page({ params }) {
+export default async function Page({ params, searchParams }) {
   const { templateId, module, recordId } = await params;
+  const { lid } = await searchParams;
 
   const submissionLogName = `${templateId}___${module}___${recordId}`;
 
-  // Fetch template + CRM record + submission log search in parallel =>
-  const [templateRecord, crmRecord, submissionLogRef] = await Promise.all([
+  // If lid (log ID) is provided, use getRecord directly — avoids Zoho search indexing delay
+  // after the submission log was just created by the applicants setup flow.
+  const submissionLogId = lid ?? (await searchRecords(SUBMISSION_LOGS_MODULE, "Name", submissionLogName))?.id ?? null;
+
+  // Fetch template + CRM record in parallel; fetch full submission log + notes by ID if found =>
+  const [templateRecord, crmRecord] = await Promise.all([
     getRecord(ZOHO_TEMPLATE_MODULE, templateId),
     getRecord(module, recordId),
-    searchRecords(SUBMISSION_LOGS_MODULE, "Name", submissionLogName),
   ]);
 
-  // Search API doesn't return subform data — fetch full record + notes by ID if found =>
-  const [submissionLog, initialNotes] = submissionLogRef
+  const [submissionLog, initialNotes] = submissionLogId
     ? await Promise.all([
-        getRecord(SUBMISSION_LOGS_MODULE, submissionLogRef.id),
-        getNotes(SUBMISSION_LOGS_MODULE, submissionLogRef.id),
+        getRecord(SUBMISSION_LOGS_MODULE, submissionLogId),
+        getNotes(SUBMISSION_LOGS_MODULE, submissionLogId),
       ])
     : [null, []];
 
   if (!templateRecord || !crmRecord) {
     notFound();
+  }
+
+  if (!submissionLog?.Applicants_Listing) {
+    redirect(`/${templateId}/${module}/${recordId}/applicants`);
   }
 
   const templateJson = crmRecord.Additional_Template_JSON
