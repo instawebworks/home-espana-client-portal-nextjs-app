@@ -93,12 +93,9 @@ export default function PortalPage({
     });
   }
 
-  async function handleSubmit(applicantIdx) {
-    const applicantName = applicants[applicantIdx];
-    const filesForApplicant = filesByApplicant[applicantIdx] ?? {};
-
-    const totalFiles = Object.values(filesForApplicant).reduce(
-      (sum, slots) => sum + Object.values(slots).reduce((s, arr) => s + arr.length, 0),
+  async function handleSubmit() {
+    const totalFiles = Object.values(filesByApplicant).reduce(
+      (sum, bd) => sum + Object.values(bd).reduce((s, slots) => s + Object.values(slots).reduce((ss, arr) => ss + arr.length, 0), 0),
       0
     );
     if (totalFiles === 0) {
@@ -131,26 +128,29 @@ export default function PortalPage({
       uploadFormData.append("existingUploads", JSON.stringify(currentLog?.Document_Uploads ?? []));
 
       const metadata = [];
-      for (const doc of documentRequirements) {
-        const slots = filesForApplicant[doc.id] ?? {};
-        for (const [scanType, files] of Object.entries(slots)) {
-          for (const file of files) {
-            uploadFormData.append("file", file);
-            metadata.push({ docName: doc.name, scanType, submittedFor: applicantName });
+      for (const [applicantIdxStr, filesForApplicant] of Object.entries(filesByApplicant)) {
+        const applicantName = applicants[Number(applicantIdxStr)];
+        if (!applicantName) continue;
+        for (const doc of documentRequirements) {
+          const slots = filesForApplicant[doc.id] ?? {};
+          for (const [scanType, files] of Object.entries(slots)) {
+            for (const file of files) {
+              uploadFormData.append("file", file);
+              metadata.push({ docName: doc.name, scanType, submittedFor: applicantName });
+            }
           }
         }
       }
       uploadFormData.append("metadata", JSON.stringify(metadata));
 
       const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadFormData });
-      const uploadData = await uploadRes.json();
 
       if (!uploadRes.ok) {
         setSnackbar({ open: true, message: "Files could not be uploaded. Please try again.", severity: "error" });
         return;
       }
 
-      setFilesByApplicant((prev) => ({ ...prev, [applicantIdx]: {} }));
+      setFilesByApplicant({});
       const logRes = await fetch(`/api/submission-log?id=${data.submissionLogId}`);
       const logData = await logRes.json();
       if (logRes.ok) setCurrentLog(logData.record);
@@ -230,25 +230,28 @@ export default function PortalPage({
                 fileTypes={doc.fileTypes ?? []}
               />
             ))}
-
-            <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
-              {submitError && (
-                <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>
-                  {submitError}
-                </Typography>
-              )}
-              <Button
-                variant="contained"
-                size="large"
-                sx={{ px: 5 }}
-                onClick={() => handleSubmit(applicantIdx)}
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit Documents"}
-              </Button>
-            </Box>
           </Box>
         ))}
+
+        {/* Single global submit button — collects files from all applicant tabs */}
+        {tab !== messagesTabIndex && (
+          <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
+            {submitError && (
+              <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>
+                {submitError}
+              </Typography>
+            )}
+            <Button
+              variant="contained"
+              size="large"
+              sx={{ px: 5 }}
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "Submit Documents"}
+            </Button>
+          </Box>
+        )}
 
         {/* Messages tab — always mounted so state is preserved */}
         <Box sx={{ display: tab === messagesTabIndex ? "block" : "none" }}>
