@@ -292,6 +292,7 @@ export default function DocumentItem({
   onSlotChange,
   previousUploads = [],
   fileTypes = [],
+  sectionApprovals = {},
 }) {
   const allowedExts =
     fileTypes.length > 0 ? new Set(fileTypes.map((t) => t.toLowerCase())) : null;
@@ -390,7 +391,7 @@ export default function DocumentItem({
         {isFrontBack ? (
           slots.map((slot, idx) => {
             const slotUploads = previousUploads.filter((u) => u.Scan_Type === slot);
-            const slotApproved = slotUploads.some((u) => u.Approval_Status === "Approved");
+            const slotApproved = sectionApprovals?.[slot.toLowerCase()] === true;
             return (
               <Box key={slot}>
                 {idx > 0 && <Divider sx={{ my: 2.5 }} />}
@@ -427,7 +428,7 @@ export default function DocumentItem({
             acceptStr={acceptStr}
             fileTypes={fileTypes}
             previousUploads={previousUploads}
-            approved={previousUploads.some((u) => u.Approval_Status === "Approved")}
+            approved={sectionApprovals?.section === true}
           />
         )}
       </AccordionDetails>

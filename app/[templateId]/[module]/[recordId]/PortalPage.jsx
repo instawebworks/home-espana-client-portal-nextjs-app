@@ -11,22 +11,14 @@ function getFirstName(fullName) {
   return fullName.split(" ")[0];
 }
 
-function getDocStatus(docName, documentUploads, scanType, applicantName) {
+function getDocStatus(docName, documentUploads, scanType, applicantName, docSectionApproval) {
+  if (docSectionApproval?.section === true) return "APPROVED";
+
   const rows = (documentUploads ?? []).filter(
     (r) => r.Document_Type === docName && r.Submitted_For === applicantName
   );
   if (rows.length === 0) return "NOT SUBMITTED";
 
-  let approved;
-  if (scanType === "Front & Back") {
-    const frontApproved = rows.filter((r) => r.Scan_Type === "Front").some((r) => r.Approval_Status === "Approved");
-    const backApproved = rows.filter((r) => r.Scan_Type === "Back").some((r) => r.Approval_Status === "Approved");
-    approved = frontApproved && backApproved;
-  } else {
-    approved = rows.some((r) => r.Approval_Status === "Approved");
-  }
-
-  if (approved) return "APPROVED";
   if (rows.some((r) => r.Approval_Status === "Pending")) return "PENDING";
   if (rows.every((r) => r.Approval_Status === "Rejected")) return "REJECTED";
   return "PENDING";
@@ -64,6 +56,13 @@ export default function PortalPage({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [currentLog, setCurrentLog] = useState(submissionLog);
+
+  const sectionApprovalsMap = (() => {
+    const raw = currentLog?.Section_Approvals;
+    if (!raw) return {};
+    try { return typeof raw === "string" ? JSON.parse(raw) : (raw ?? {}); }
+    catch { return {}; }
+  })();
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   function handleTabChange(_, newTab) {
@@ -218,7 +217,7 @@ export default function PortalPage({
                 name={doc.name}
                 requirement={doc.requirement}
                 scanType={doc.scanType}
-                status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType, applicantName)}
+                status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType, applicantName, sectionApprovalsMap[doc.name])}
                 additionalInstructions={doc.additionalInstructions}
                 expanded={expandedId === doc.id}
                 onChange={() => handleExpand(doc.id)}
@@ -228,6 +227,7 @@ export default function PortalPage({
                   (u) => u.Document_Type === doc.name && u.Submitted_For === applicantName
                 )}
                 fileTypes={doc.fileTypes ?? []}
+                sectionApprovals={sectionApprovalsMap[doc.name] ?? {}}
               />
             ))}
           </Box>
