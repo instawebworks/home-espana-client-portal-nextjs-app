@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert, Box, Button, Paper, Snackbar, Tab, Tabs, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Paper,
+  Snackbar,
+  Tab,
+  Tabs,
+  Typography,
+} from "@mui/material";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import DocumentItem from "@/components/DocumentItem";
 import MessagesPanel from "@/components/MessagesPanel";
@@ -11,11 +20,17 @@ function getFirstName(fullName) {
   return fullName.split(" ")[0];
 }
 
-function getDocStatus(docName, documentUploads, scanType, applicantName, docSectionApproval) {
+function getDocStatus(
+  docName,
+  documentUploads,
+  scanType,
+  applicantName,
+  docSectionApproval,
+) {
   if (docSectionApproval?.section === true) return "APPROVED";
 
   const rows = (documentUploads ?? []).filter(
-    (r) => r.Document_Type === docName && r.Submitted_For === applicantName
+    (r) => r.Document_Type === docName && r.Submitted_For === applicantName,
   );
   if (rows.length === 0) return "NOT SUBMITTED";
 
@@ -33,7 +48,9 @@ export default function PortalPage({
   submissionLog,
   initialNotes = [],
 }) {
-  const documentRequirements = (templateJson?.documentRequirements ?? []).filter((doc) => doc.checked);
+  const documentRequirements = (
+    templateJson?.documentRequirements ?? []
+  ).filter((doc) => doc.checked);
 
   const applicants = (submissionLog?.Applicants_Listing ?? "")
     .split(";")
@@ -60,10 +77,17 @@ export default function PortalPage({
   const sectionApprovalsMap = (() => {
     const raw = currentLog?.Section_Approvals;
     if (!raw) return {};
-    try { return typeof raw === "string" ? JSON.parse(raw) : (raw ?? {}); }
-    catch { return {}; }
+    try {
+      return typeof raw === "string" ? JSON.parse(raw) : (raw ?? {});
+    } catch {
+      return {};
+    }
   })();
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   function handleTabChange(_, newTab) {
     setTab(newTab);
@@ -81,11 +105,20 @@ export default function PortalPage({
       const docSlots = byDoc[docId] ?? {};
       const updated = {
         ...prev,
-        [applicantIdx]: { ...byDoc, [docId]: { ...docSlots, [slot]: updater(docSlots[slot] ?? []) } },
+        [applicantIdx]: {
+          ...byDoc,
+          [docId]: { ...docSlots, [slot]: updater(docSlots[slot] ?? []) },
+        },
       };
       const totalFiles = Object.values(updated).reduce(
-        (sum, bd) => sum + Object.values(bd).reduce((s, slots) => s + Object.values(slots).reduce((ss, arr) => ss + arr.length, 0), 0),
-        0
+        (sum, bd) =>
+          sum +
+          Object.values(bd).reduce(
+            (s, slots) =>
+              s + Object.values(slots).reduce((ss, arr) => ss + arr.length, 0),
+            0,
+          ),
+        0,
       );
       if (totalFiles > 0) setSubmitError(null);
       return updated;
@@ -94,8 +127,14 @@ export default function PortalPage({
 
   async function handleSubmit() {
     const totalFiles = Object.values(filesByApplicant).reduce(
-      (sum, bd) => sum + Object.values(bd).reduce((s, slots) => s + Object.values(slots).reduce((ss, arr) => ss + arr.length, 0), 0),
-      0
+      (sum, bd) =>
+        sum +
+        Object.values(bd).reduce(
+          (s, slots) =>
+            s + Object.values(slots).reduce((ss, arr) => ss + arr.length, 0),
+          0,
+        ),
+      0,
     );
     if (totalFiles === 0) {
       setSubmitError("Please attach at least one file before submitting.");
@@ -118,16 +157,25 @@ export default function PortalPage({
 
       const data = await res.json();
       if (!res.ok) {
-        setSnackbar({ open: true, message: "Submission failed. Please try again.", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Submission failed. Please try again.",
+          severity: "error",
+        });
         return;
       }
 
       const uploadFormData = new FormData();
       uploadFormData.append("submissionLogId", data.submissionLogId);
-      uploadFormData.append("existingUploads", JSON.stringify(currentLog?.Document_Uploads ?? []));
+      uploadFormData.append(
+        "existingUploads",
+        JSON.stringify(currentLog?.Document_Uploads ?? []),
+      );
 
       const metadata = [];
-      for (const [applicantIdxStr, filesForApplicant] of Object.entries(filesByApplicant)) {
+      for (const [applicantIdxStr, filesForApplicant] of Object.entries(
+        filesByApplicant,
+      )) {
         const applicantName = applicants[Number(applicantIdxStr)];
         if (!applicantName) continue;
         for (const doc of documentRequirements) {
@@ -135,25 +183,42 @@ export default function PortalPage({
           for (const [scanType, files] of Object.entries(slots)) {
             for (const file of files) {
               uploadFormData.append("file", file);
-              metadata.push({ docName: doc.name, scanType, submittedFor: applicantName });
+              metadata.push({
+                docName: doc.name,
+                scanType,
+                submittedFor: applicantName,
+              });
             }
           }
         }
       }
       uploadFormData.append("metadata", JSON.stringify(metadata));
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData,
+      });
 
       if (!uploadRes.ok) {
-        setSnackbar({ open: true, message: "Files could not be uploaded. Please try again.", severity: "error" });
+        setSnackbar({
+          open: true,
+          message: "Files could not be uploaded. Please try again.",
+          severity: "error",
+        });
         return;
       }
 
       setFilesByApplicant({});
-      const logRes = await fetch(`/api/submission-log?id=${data.submissionLogId}`);
+      const logRes = await fetch(
+        `/api/submission-log?id=${data.submissionLogId}`,
+      );
       const logData = await logRes.json();
       if (logRes.ok) setCurrentLog(logData.record);
-      setSnackbar({ open: true, message: "Documents submitted successfully!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Documents submitted successfully!",
+        severity: "success",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -181,9 +246,16 @@ export default function PortalPage({
         <Button
           size="small"
           startIcon={<LockResetIcon />}
-          onClick={() => router.push(`/${templateId}/${module}/${recordId}/change-password`)}
+          onClick={() =>
+            router.push(`/${templateId}/${module}/${recordId}/change-password`)
+          }
           variant="outlined"
-          sx={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)" }}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            right: 16,
+            transform: "translateY(-50%)",
+          }}
         >
           Change Password
         </Button>
@@ -210,24 +282,43 @@ export default function PortalPage({
 
         {/* Applicant document tabs */}
         {applicants.map((applicantName, applicantIdx) => (
-          <Box key={applicantName} sx={{ display: tab === applicantIdx ? "block" : "none" }}>
+          <Box
+            key={applicantName}
+            sx={{ display: tab === applicantIdx ? "block" : "none" }}
+          >
             {documentRequirements.map((doc) => (
               <DocumentItem
                 key={doc.id}
                 name={doc.name}
                 requirement={doc.requirement}
                 scanType={doc.scanType}
-                status={getDocStatus(doc.name, currentLog?.Document_Uploads, doc.scanType, applicantName, sectionApprovalsMap[doc.name])}
+                status={getDocStatus(
+                  doc.name,
+                  currentLog?.Document_Uploads,
+                  doc.scanType,
+                  applicantName,
+                  sectionApprovalsMap[doc.name],
+                )}
                 additionalInstructions={doc.additionalInstructions}
                 expanded={expandedId === doc.id}
                 onChange={() => handleExpand(doc.id)}
-                fileSlots={(filesByApplicant[applicantIdx] ?? {})[doc.id] ?? {}}
-                onSlotChange={(slot, updater) => handleSlotChange(applicantIdx, doc.id, slot, updater)}
+                fileSlots={
+                  (filesByApplicant[applicantIdx] ?? {})[doc.id] ?? {}
+                }
+                onSlotChange={(slot, updater) =>
+                  handleSlotChange(applicantIdx, doc.id, slot, updater)
+                }
                 previousUploads={(currentLog?.Document_Uploads ?? []).filter(
-                  (u) => u.Document_Type === doc.name && u.Submitted_For === applicantName
+                  (u) =>
+                    u.Document_Type === doc.name &&
+                    u.Submitted_For === applicantName,
                 )}
                 fileTypes={doc.fileTypes ?? []}
                 sectionApprovals={sectionApprovalsMap[doc.name] ?? {}}
+                adminUploads={(currentLog?.Admin_Uploads ?? []).filter(
+                  (u) => u.Document_Type === doc.name,
+                )}
+                submissionLogId={currentLog?.id ?? null}
               />
             ))}
           </Box>
@@ -262,7 +353,9 @@ export default function PortalPage({
             recordId={recordId}
             clientName={clientName}
             initialNotes={initialNotes}
-            onLogCreated={(id) => setCurrentLog((prev) => prev ?? { id, Document_Uploads: [] })}
+            onLogCreated={(id) =>
+              setCurrentLog((prev) => prev ?? { id, Document_Uploads: [] })
+            }
           />
         </Box>
       </Box>

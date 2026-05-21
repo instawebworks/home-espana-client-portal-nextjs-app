@@ -14,10 +14,16 @@ export async function GET(request) {
       return new Response("Not found", { status: 404 });
     }
 
+    const download = searchParams.get("download") === "true";
+    const filename = searchParams.get("filename");
+    const disposition = download
+      ? `attachment${filename ? `; filename="${filename}"` : ""}`
+      : "inline";
+
     return new Response(zohoRes.body, {
       headers: {
         "Content-Type": zohoRes.headers.get("content-type") ?? "application/octet-stream",
-        "Content-Disposition": "inline",
+        "Content-Disposition": disposition,
       },
     });
   } catch (err) {

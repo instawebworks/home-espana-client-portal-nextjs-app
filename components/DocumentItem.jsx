@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import AdminUploadsCard from "@/components/AdminUploadsCard";
 
 const STATUS_COLORS = {
   "NOT SUBMITTED": "#9ca3af",
@@ -293,6 +294,8 @@ export default function DocumentItem({
   previousUploads = [],
   fileTypes = [],
   sectionApprovals = {},
+  adminUploads = [],
+  submissionLogId = null,
 }) {
   const allowedExts =
     fileTypes.length > 0 ? new Set(fileTypes.map((t) => t.toLowerCase())) : null;
@@ -364,73 +367,92 @@ export default function DocumentItem({
         </Box>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 3, pb: 3, pt: 0 }}>
-        {additionalInstructions && (
-          <Box
-            sx={{
-              bgcolor: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: 1,
-              p: 2,
-              mb: 2.5,
-            }}
-          >
-            <Typography
-              variant="caption"
-              fontWeight={700}
-              sx={{ color: "#2563eb", textTransform: "uppercase", letterSpacing: 1 }}
-            >
-              What to Upload
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5, color: "#1e40af" }}>
-              {additionalInstructions}
-            </Typography>
-          </Box>
-        )}
+      {adminUploads.length > 0 && (
+        <AdminUploadsCard
+          adminUploads={adminUploads}
+          submissionLogId={submissionLogId}
+          nested
+        />
+      )}
 
-        {isFrontBack ? (
-          slots.map((slot, idx) => {
-            const slotUploads = previousUploads.filter((u) => u.Scan_Type === slot);
-            const slotApproved = sectionApprovals?.[slot.toLowerCase()] === true;
-            return (
-              <Box key={slot}>
-                {idx > 0 && <Divider sx={{ my: 2.5 }} />}
-                <Typography
-                  variant="caption"
-                  fontWeight={700}
-                  sx={{
-                    display: "block",
-                    mb: 1.5,
-                    color: slotApproved ? "#16a34a" : "text.secondary",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  {slot} Side{slotApproved ? " — Approved" : ""}
-                </Typography>
-                <UploadZone
-                  files={fileSlots[slot] ?? []}
-                  onFilesChange={(updater) => onSlotChange(slot, updater)}
-                  allowedExts={allowedExts}
-                  acceptStr={acceptStr}
-                  fileTypes={fileTypes}
-                  previousUploads={slotUploads}
-                  approved={slotApproved}
-                />
-              </Box>
-            );
-          })
-        ) : (
-          <UploadZone
-            files={fileSlots["Single"] ?? []}
-            onFilesChange={(updater) => onSlotChange("Single", updater)}
-            allowedExts={allowedExts}
-            acceptStr={acceptStr}
-            fileTypes={fileTypes}
-            previousUploads={previousUploads}
-            approved={sectionApprovals?.section === true}
-          />
-        )}
+      <AccordionDetails sx={{ px: 2, pb: 2, pt: 1.5 }}>
+        <Box
+          sx={{
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: "8px",
+            overflow: "hidden",
+            px: 2.5,
+            py: 2,
+          }}
+        >
+          {additionalInstructions && (
+            <Box
+              sx={{
+                bgcolor: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: 1,
+                p: 2,
+                mb: 2.5,
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                sx={{ color: "#2563eb", textTransform: "uppercase", letterSpacing: 1 }}
+              >
+                What to Upload
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5, color: "#1e40af" }}>
+                {additionalInstructions}
+              </Typography>
+            </Box>
+          )}
+
+          {isFrontBack ? (
+            slots.map((slot, idx) => {
+              const slotUploads = previousUploads.filter((u) => u.Scan_Type === slot);
+              const slotApproved = sectionApprovals?.[slot.toLowerCase()] === true;
+              return (
+                <Box key={slot}>
+                  {idx > 0 && <Divider sx={{ my: 2.5 }} />}
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    sx={{
+                      display: "block",
+                      mb: 1.5,
+                      color: slotApproved ? "#16a34a" : "text.secondary",
+                      textTransform: "uppercase",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {slot} Side{slotApproved ? " — Approved" : ""}
+                  </Typography>
+                  <UploadZone
+                    files={fileSlots[slot] ?? []}
+                    onFilesChange={(updater) => onSlotChange(slot, updater)}
+                    allowedExts={allowedExts}
+                    acceptStr={acceptStr}
+                    fileTypes={fileTypes}
+                    previousUploads={slotUploads}
+                    approved={slotApproved}
+                  />
+                </Box>
+              );
+            })
+          ) : (
+            <UploadZone
+              files={fileSlots["Single"] ?? []}
+              onFilesChange={(updater) => onSlotChange("Single", updater)}
+              allowedExts={allowedExts}
+              acceptStr={acceptStr}
+              fileTypes={fileTypes}
+              previousUploads={previousUploads}
+              approved={sectionApprovals?.section === true}
+            />
+          )}
+        </Box>
       </AccordionDetails>
 
     </Accordion>
