@@ -111,7 +111,7 @@ export default function LoginForm({ templateId, module, recordId }) {
             label="Password"
             type={showPassword ? "text" : "password"}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value.trim())}
             required
             fullWidth
             autoFocus
