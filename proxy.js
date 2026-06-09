@@ -21,7 +21,7 @@ async function getValidSession(token, templateId, module, recordId) {
   }
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
   const segments = pathname.split("/").filter(Boolean);
 

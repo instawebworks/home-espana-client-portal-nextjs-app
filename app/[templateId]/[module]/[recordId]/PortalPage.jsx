@@ -57,7 +57,8 @@ export default function PortalPage({
     .map((n) => n.trim())
     .filter(Boolean);
 
-  const messagesTabIndex = applicants.length;
+  const instructionsTabIndex = 0;
+  const messagesTabIndex = applicants.length + 1;
 
   const clientName =
     crmRecord?.Full_Name ||
@@ -273,6 +274,7 @@ export default function PortalPage({
         {/* Dynamic tabs */}
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2.5 }}>
           <Tabs value={tab} onChange={handleTabChange}>
+            <Tab label="Instructions" />
             {applicants.map((name) => (
               <Tab key={name} label={`${getFirstName(name)}'s Documents`} />
             ))}
@@ -280,11 +282,146 @@ export default function PortalPage({
           </Tabs>
         </Box>
 
+        {/* Instructions tab */}
+        <Box sx={{ display: tab === instructionsTabIndex ? "block" : "none" }}>
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              How to use this portal
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              This portal is where you upload the documents we need for your
+              property purchase application. Our team will review each document
+              and let you know here once it's approved or needs attention.
+            </Typography>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Navigating the portal
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Each applicant has their own tab (for example{" "}
+              <strong>John's Documents</strong> and{" "}
+              <strong>Ana's Documents</strong>). Open the tab for the applicant
+              whose documents you're uploading, then click any document row to
+              expand it and see what's needed.
+            </Typography>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Document status
+            </Typography>
+            <Box
+              component="ul"
+              sx={{ pl: 2.5, m: 0, color: "text.secondary" }}
+            >
+              <li>
+                <Typography variant="body2" component="span">
+                  <strong>NOT SUBMITTED</strong> — nothing uploaded yet.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  <strong>PENDING</strong> — uploaded and waiting for our review.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  <strong>APPROVED</strong> — accepted by our team, nothing
+                  more needed.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  <strong>REJECTED</strong> — please check the note from our
+                  team and upload a corrected file.
+                </Typography>
+              </li>
+            </Box>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Uploading documents
+            </Typography>
+            <Box
+              component="ol"
+              sx={{ pl: 2.5, m: 0, color: "text.secondary" }}
+            >
+              <li>
+                <Typography variant="body2" component="span">
+                  Open the tab for the applicant the document belongs to.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  Click a document row to expand it.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  Choose the file(s) for each side (front / back, where
+                  applicable).
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  When you've selected everything you'd like to send, click{" "}
+                  <strong>Submit Documents</strong> at the bottom of the page.
+                </Typography>
+              </li>
+            </Box>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1.5 }}
+            >
+              You can prepare uploads for more than one applicant in the same
+              submission — your selections are kept as you switch between tabs.
+            </Typography>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Reference documents from our team
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              If our team has shared example or reference files for a
+              particular document, you'll see them in an amber section inside
+              that document. You can view them online or save a copy.
+            </Typography>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Messages
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Use the <strong>Messages</strong> tab to chat with our team if
+              you have any questions about a document or the application
+              overall — we'll reply here.
+            </Typography>
+          </Paper>
+
+          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Password & security
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Use <strong>Change Password</strong> at the top right if you'd
+              like to update your portal password. For your security, your
+              session expires after 30 minutes of inactivity — just log in
+              again to continue.
+            </Typography>
+          </Paper>
+        </Box>
+
         {/* Applicant document tabs */}
         {applicants.map((applicantName, applicantIdx) => (
           <Box
             key={applicantName}
-            sx={{ display: tab === applicantIdx ? "block" : "none" }}
+            sx={{ display: tab === applicantIdx + 1 ? "block" : "none" }}
           >
             {documentRequirements.map((doc) => (
               <DocumentItem
@@ -325,7 +462,7 @@ export default function PortalPage({
         ))}
 
         {/* Single global submit button — collects files from all applicant tabs */}
-        {tab !== messagesTabIndex && (
+        {tab !== instructionsTabIndex && tab !== messagesTabIndex && (
           <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
             {submitError && (
               <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>
