@@ -1,5 +1,12 @@
 import { notFound, redirect } from "next/navigation";
-import { getRecord, getNotes, searchRecords, ZOHO_TEMPLATE_MODULE } from "@/lib/zoho/crm";
+import {
+  getRecord,
+  getNotes,
+  searchRecords,
+  listAttachments,
+  ZOHO_TEMPLATE_MODULE,
+} from "@/lib/zoho/crm";
+import { REQUIRED_INFO_PREFIX } from "@/lib/constants";
 import PortalPage from "./PortalPage";
 
 export const SUBMISSION_LOGS_MODULE = "Submission_Logs";
@@ -14,11 +21,24 @@ export default async function Page({ params, searchParams }) {
   // after the submission log was just created by the applicants setup flow.
   const submissionLogId = lid ?? (await searchRecords(SUBMISSION_LOGS_MODULE, "Name", submissionLogName))?.id ?? null;
 
-  // Fetch template + CRM record in parallel; fetch full submission log + notes by ID if found =>
-  const [templateRecord, crmRecord] = await Promise.all([
+  // Fetch template + CRM record + record attachments in parallel; fetch full
+  // submission log + notes by ID if found =>
+  const [templateRecord, crmRecord, recordAttachments] = await Promise.all([
     getRecord(ZOHO_TEMPLATE_MODULE, templateId),
     getRecord(module, recordId),
+    listAttachments(module, recordId),
   ]);
+
+  // Only the forms re-uploaded through the portal (identified by the marker
+  // prefix) — never expose unrelated attachments on the record to the client.
+  const requiredInfoUploads = (recordAttachments ?? [])
+    .filter((a) => (a.File_Name ?? "").startsWith(REQUIRED_INFO_PREFIX))
+    .map((a) => ({
+      id: a.id,
+      name: (a.File_Name ?? "").slice(REQUIRED_INFO_PREFIX.length),
+      time: a.Created_Time ?? a.Modified_Time ?? null,
+    }))
+    .sort((a, b) => new Date(b.time ?? 0) - new Date(a.time ?? 0));
 
   const [submissionLog, initialNotes] = submissionLogId
     ? await Promise.all([
@@ -48,6 +68,7 @@ export default async function Page({ params, searchParams }) {
       crmRecord={crmRecord}
       submissionLog={submissionLog}
       initialNotes={initialNotes}
+      requiredInfoUploads={requiredInfoUploads}
     />
   );
 }

@@ -13,11 +13,30 @@ import {
   Typography,
 } from "@mui/material";
 import LockResetIcon from "@mui/icons-material/LockReset";
+import DownloadIcon from "@mui/icons-material/Download";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DescriptionIcon from "@mui/icons-material/Description";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DocumentItem from "@/components/DocumentItem";
 import MessagesPanel from "@/components/MessagesPanel";
 
 function getFirstName(fullName) {
   return fullName.split(" ")[0];
+}
+
+function formatUploadDate(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
 }
 
 function getDocStatus(
@@ -47,6 +66,7 @@ export default function PortalPage({
   crmRecord,
   submissionLog,
   initialNotes = [],
+  requiredInfoUploads = [],
 }) {
   const documentRequirements = (
     templateJson?.documentRequirements ?? []
@@ -66,6 +86,15 @@ export default function PortalPage({
     crmRecord?.Deal_Name ||
     "You";
 
+  const greetingName =
+    clientName && clientName !== "You" ? getFirstName(clientName) : null;
+
+  // Zoho webform (Option 2). The Deal ID is passed as `id` so the submission
+  // can be linked back to this record.
+  const webformUrl = `https://forms.zohopublic.eu/Hipoteken/form/Requiredinformation1/formperma/pjyGLWLvEkK4-n98pKWe1yjfMS3evvivEKhIyJ9IaPg?id=${encodeURIComponent(
+    recordId,
+  )}`;
+
   const router = useRouter();
   const [tab, setTab] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
@@ -74,6 +103,10 @@ export default function PortalPage({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [currentLog, setCurrentLog] = useState(submissionLog);
+
+  // Re-upload of the filled "Required Information" form (Part 2)
+  const [reuploadFile, setReuploadFile] = useState(null);
+  const [reuploading, setReuploading] = useState(false);
 
   const sectionApprovalsMap = (() => {
     const raw = currentLog?.Section_Approvals;
@@ -94,6 +127,38 @@ export default function PortalPage({
     setTab(newTab);
     setExpandedId(null);
     setSubmitError(null);
+  }
+
+  async function handleRequiredInfoReupload() {
+    if (!reuploadFile) return;
+    setReuploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("module", module);
+      fd.append("recordId", recordId);
+      fd.append("file", reuploadFile);
+      const res = await fetch("/api/required-info/upload", {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      setReuploadFile(null);
+      setSnackbar({
+        open: true,
+        message: "Your completed form has been uploaded. Thank you!",
+        severity: "success",
+      });
+      // Re-fetch server data so the newly uploaded form shows in the list.
+      router.refresh();
+    } catch {
+      setSnackbar({
+        open: true,
+        message: "Sorry, the upload failed. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setReuploading(false);
+    }
   }
 
   function handleExpand(id) {
@@ -284,16 +349,284 @@ export default function PortalPage({
 
         {/* Instructions tab */}
         <Box sx={{ display: tab === instructionsTabIndex ? "block" : "none" }}>
+          {/* ── Part 1: Required information intro ── */}
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="h6" fontWeight={700} gutterBottom>
-              How to use this portal
+              Hi {greetingName || "there"},
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              This portal is where you upload the documents we need for your
-              property purchase application. Our team will review each document
-              and let you know here once it's approved or needs attention.
+              Here's the information we need from you to ensure your details are
+              correct before sharing them with the banks. To give us that
+              information, you have two options:
+            </Typography>
+            <Box
+              component="ol"
+              sx={{ pl: 2.5, mt: 1.5, mb: 0, color: "text.secondary" }}
+            >
+              <li>
+                <Typography variant="body2" component="span">
+                  Either <strong>download the form below</strong>, fill it out
+                  and re-upload it, <em>or</em>
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2" component="span">
+                  Fill out the <strong>webform below</strong> and we'll have the
+                  information sent directly to us once you finish.
+                </Typography>
+              </li>
+            </Box>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1.5, fontStyle: "italic" }}
+            >
+              You only need to complete one of these two options.
             </Typography>
           </Paper>
+
+          {/* ── Part 2: Preuploaded document (download / re-upload) ── */}
+          <Paper variant="outlined" sx={{ p: 0, mb: 2, overflow: "hidden" }}>
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <DescriptionIcon fontSize="small" />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Option 1 — Download, fill in &amp; re-upload the form
+              </Typography>
+            </Box>
+
+            <Box sx={{ px: 3, py: 2.5 }}>
+              {/* Step 1 — download */}
+              <Box sx={{ display: "flex", gap: 1.5, mb: 3 }}>
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  1
+                </Box>
+                <Box>
+                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                    Download the form
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1.5 }}
+                  >
+                    Open the form, then fill in your details. You can complete it
+                    on your computer or print it and fill it in by hand.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    component="a"
+                    href="/credit-application-form.pdf"
+                    download="Hipoteken Application Form.pdf"
+                  >
+                    Download the form
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Step 2 — upload */}
+              <Box sx={{ display: "flex", gap: 1.5 }}>
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  2
+                </Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                    Upload your completed form
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1.5 }}
+                  >
+                    Once you've filled it in, upload the completed file (PDF) back
+                    to us here.
+                  </Typography>
+
+                  {/* Already-uploaded forms */}
+                  {requiredInfoUploads.length > 0 && (
+                    <Box
+                      sx={{
+                        mb: 2,
+                        border: 1,
+                        borderColor: "success.light",
+                        bgcolor: "rgba(56, 142, 60, 0.08)",
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1.5,
+                      }}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="success.dark"
+                        fontWeight={700}
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        {requiredInfoUploads.length === 1
+                          ? "Form received"
+                          : "Forms received"}
+                      </Typography>
+                      {requiredInfoUploads.map((f) => (
+                        <Box
+                          key={f.id}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            py: 0.25,
+                          }}
+                        >
+                          <CheckCircleIcon
+                            sx={{ fontSize: 18, color: "success.main" }}
+                          />
+                          <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                            {f.name}
+                          </Typography>
+                          {f.time && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {formatUploadDate(f.time)}
+                            </Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 1.5,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<UploadFileIcon />}
+                    >
+                      {reuploadFile
+                        ? "Choose a different file"
+                        : requiredInfoUploads.length > 0
+                          ? "Upload another file"
+                          : "Choose your filled form"}
+                      <input
+                        type="file"
+                        hidden
+                        accept="application/pdf"
+                        onChange={(e) =>
+                          setReuploadFile(e.target.files?.[0] ?? null)
+                        }
+                      />
+                    </Button>
+
+                    {reuploadFile && (
+                      <>
+                        <Typography variant="body2" color="text.secondary">
+                          {reuploadFile.name}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          onClick={handleRequiredInfoReupload}
+                          disabled={reuploading}
+                        >
+                          {reuploading ? "Uploading…" : "Upload completed form"}
+                        </Button>
+                      </>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Paper>
+
+          {/* ── Part 3: Online webform ── */}
+          <Paper variant="outlined" sx={{ p: 0, mb: 2, overflow: "hidden" }}>
+            <Box
+              sx={{
+                px: 3,
+                py: 2,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <EditNoteIcon fontSize="small" />
+              <Typography variant="subtitle1" fontWeight={700}>
+                Option 2 — Fill in the form online
+              </Typography>
+            </Box>
+
+            <Box sx={{ px: 3, py: 2.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Prefer not to download anything? You can complete the same
+                information in a quick online form. It opens in a new tab, and
+                once you submit it your details come straight through to us — no
+                upload needed.
+              </Typography>
+              <Button
+                variant="contained"
+                endIcon={<OpenInNewIcon />}
+                component="a"
+                href={webformUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open the online form
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* ── Using the rest of the portal (folded-in navigation tips) ── */}
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ display: "block", mt: 3, mb: 1 }}
+          >
+            Using the rest of the portal
+          </Typography>
 
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
