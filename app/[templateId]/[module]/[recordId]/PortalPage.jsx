@@ -18,7 +18,6 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionIcon from "@mui/icons-material/Description";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import DocumentItem from "@/components/DocumentItem";
 import MessagesPanel from "@/components/MessagesPanel";
 
@@ -78,7 +77,8 @@ export default function PortalPage({
     .filter(Boolean);
 
   const instructionsTabIndex = 0;
-  const messagesTabIndex = applicants.length + 1;
+  const applicationFormTabIndex = 1;
+  const messagesTabIndex = applicants.length + 2;
 
   const clientName =
     crmRecord?.Full_Name ||
@@ -299,11 +299,17 @@ export default function PortalPage({
           borderBottom: "1px solid",
           borderColor: "divider",
           py: 2,
+          px: 2,
           textAlign: "center",
           position: "relative",
         }}
       >
-        <Typography variant="h4" fontWeight={700} color="text.primary">
+        <Typography
+          variant="h4"
+          fontWeight={700}
+          color="text.primary"
+          sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+        >
           Hipoteken Document Portal
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
@@ -317,10 +323,11 @@ export default function PortalPage({
           }
           variant="outlined"
           sx={{
-            position: "absolute",
-            top: "50%",
-            right: 16,
-            transform: "translateY(-50%)",
+            mt: { xs: 1.5, sm: 0 },
+            position: { xs: "static", sm: "absolute" },
+            top: { sm: "50%" },
+            right: { sm: 16 },
+            transform: { sm: "translateY(-50%)" },
           }}
         >
           Change Password
@@ -338,8 +345,15 @@ export default function PortalPage({
 
         {/* Dynamic tabs */}
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2.5 }}>
-          <Tabs value={tab} onChange={handleTabChange}>
+          <Tabs
+            value={tab}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+          >
             <Tab label="Instructions" />
+            <Tab label="Application Form" />
             {applicants.map((name) => (
               <Tab key={name} label={`${getFirstName(name)}'s Documents`} />
             ))}
@@ -347,8 +361,8 @@ export default function PortalPage({
           </Tabs>
         </Box>
 
-        {/* Instructions tab */}
-        <Box sx={{ display: tab === instructionsTabIndex ? "block" : "none" }}>
+        {/* Application Form tab */}
+        <Box sx={{ display: tab === applicationFormTabIndex ? "block" : "none" }}>
           {/* ── Part 1: Required information intro ── */}
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="h6" fontWeight={700} gutterBottom>
@@ -532,49 +546,51 @@ export default function PortalPage({
                     </Box>
                   )}
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 1.5,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<UploadFileIcon />}
+                  {/* Once a form has been received, hide the upload control —
+                      the client may only submit the required-info form once. */}
+                  {requiredInfoUploads.length === 0 && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1.5,
+                        alignItems: "center",
+                      }}
                     >
-                      {reuploadFile
-                        ? "Choose a different file"
-                        : requiredInfoUploads.length > 0
-                          ? "Upload another file"
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={<UploadFileIcon />}
+                      >
+                        {reuploadFile
+                          ? "Choose a different file"
                           : "Choose your filled form"}
-                      <input
-                        type="file"
-                        hidden
-                        accept="application/pdf"
-                        onChange={(e) =>
-                          setReuploadFile(e.target.files?.[0] ?? null)
-                        }
-                      />
-                    </Button>
+                        <input
+                          type="file"
+                          hidden
+                          accept="application/pdf"
+                          onChange={(e) =>
+                            setReuploadFile(e.target.files?.[0] ?? null)
+                          }
+                        />
+                      </Button>
 
-                    {reuploadFile && (
-                      <>
-                        <Typography variant="body2" color="text.secondary">
-                          {reuploadFile.name}
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          onClick={handleRequiredInfoReupload}
-                          disabled={reuploading}
-                        >
-                          {reuploading ? "Uploading…" : "Upload completed form"}
-                        </Button>
-                      </>
-                    )}
-                  </Box>
+                      {reuploadFile && (
+                        <>
+                          <Typography variant="body2" color="text.secondary">
+                            {reuploadFile.name}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            onClick={handleRequiredInfoReupload}
+                            disabled={reuploading}
+                          >
+                            {reuploading ? "Uploading…" : "Upload completed form"}
+                          </Button>
+                        </>
+                      )}
+                    </Box>
+                  )}
                 </Box>
               </Box>
             </Box>
@@ -601,29 +617,32 @@ export default function PortalPage({
 
             <Box sx={{ px: 3, py: 2.5 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Prefer not to download anything? You can complete the same
-                information in a quick online form. It opens in a new tab, and
-                once you submit it your details come straight through to us — no
-                upload needed.
+                Prefer not to download anything? Just fill in the form below and
+                submit it — your details come straight through to us, no upload
+                needed.
               </Typography>
-              <Button
-                variant="contained"
-                endIcon={<OpenInNewIcon />}
-                component="a"
-                href={webformUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open the online form
-              </Button>
+              <Box
+                component="iframe"
+                title="Required information form"
+                src={webformUrl}
+                sx={{
+                  width: "100%",
+                  height: { xs: 640, sm: 720 },
+                  border: "none",
+                  display: "block",
+                }}
+              />
             </Box>
           </Paper>
 
-          {/* ── Using the rest of the portal (folded-in navigation tips) ── */}
+        </Box>
+
+        {/* Instructions tab */}
+        <Box sx={{ display: tab === instructionsTabIndex ? "block" : "none" }}>
           <Typography
             variant="overline"
             color="text.secondary"
-            sx={{ display: "block", mt: 3, mb: 1 }}
+            sx={{ display: "block", mb: 1 }}
           >
             Using the rest of the portal
           </Typography>
@@ -754,7 +773,7 @@ export default function PortalPage({
         {applicants.map((applicantName, applicantIdx) => (
           <Box
             key={applicantName}
-            sx={{ display: tab === applicantIdx + 1 ? "block" : "none" }}
+            sx={{ display: tab === applicantIdx + 2 ? "block" : "none" }}
           >
             {documentRequirements.map((doc) => (
               <DocumentItem
@@ -786,7 +805,9 @@ export default function PortalPage({
                 fileTypes={doc.fileTypes ?? []}
                 sectionApprovals={sectionApprovalsMap[doc.name] ?? {}}
                 adminUploads={(currentLog?.Admin_Uploads ?? []).filter(
-                  (u) => u.Document_Type === doc.name,
+                  (u) =>
+                    u.Document_Type === doc.name &&
+                    u.Uploaded_For === applicantName,
                 )}
                 submissionLogId={currentLog?.id ?? null}
               />
@@ -795,7 +816,9 @@ export default function PortalPage({
         ))}
 
         {/* Single global submit button — collects files from all applicant tabs */}
-        {tab !== instructionsTabIndex && tab !== messagesTabIndex && (
+        {tab !== instructionsTabIndex &&
+          tab !== applicationFormTabIndex &&
+          tab !== messagesTabIndex && (
           <Box sx={{ textAlign: "center", mt: 3, mb: 4 }}>
             {submitError && (
               <Typography variant="body2" color="error" sx={{ mb: 1.5 }}>

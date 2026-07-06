@@ -327,10 +327,19 @@ export default function DocumentItem({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 1,
             width: "100%",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 1,
+              minWidth: 0,
+            }}
+          >
             <Typography fontWeight={700}>{name}</Typography>
             {requirement && (
               <Box
@@ -360,6 +369,8 @@ export default function DocumentItem({
               color: STATUS_COLORS[status] ?? STATUS_COLORS["NOT SUBMITTED"],
               fontSize: "0.8rem",
               letterSpacing: 0.5,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             {status}
