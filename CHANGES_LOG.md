@@ -2,6 +2,7 @@
 
 | Change / Update | Time Taken | Avg Good Developer |
 | --------------- | ---------- | ------------------ |
+| Per-applicant scoping for broker-requested docs: a documentRequirements entry may carry an optional `forApplicants` array (applicant display names); rows with it render only on those applicants' tabs, rows without it stay universal. Added `isReqForApplicant` helper and filtered the applicant-tab render loop by it. Contract shared with the CRM widget which writes the key | ~5 min | ~30 min |
 | Hide "Required Information" form upload button once a form has been received (client may upload only once) | ~3 min | ~20 min |
 | Move Option 1 & 2 (application form intro + download/re-upload + online webform) out of Instructions into a new "Application Form" tab in 2nd position; reindex applicant/Messages tabs | ~6 min | ~30 min |
 | Embed Zoho webform inline (iframe) in Option 2 instead of "Open the online form" button, so client submits without leaving the portal; kept ?id=recordId prefill | ~4 min | ~20 min |

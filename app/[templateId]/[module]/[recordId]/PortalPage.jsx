@@ -57,6 +57,16 @@ function getDocStatus(
   return "PENDING";
 }
 
+// A requirement with a non-empty `forApplicants` list is scoped to those applicants
+// (broker-requested extra docs); otherwise it's universal and shown to everyone.
+function isReqForApplicant(doc, applicantName) {
+  const list = Array.isArray(doc?.forApplicants)
+    ? doc.forApplicants.map((s) => (s ?? "").trim()).filter(Boolean)
+    : [];
+  if (list.length === 0) return true;
+  return list.includes((applicantName ?? "").trim());
+}
+
 export default function PortalPage({
   templateId,
   module,
@@ -775,7 +785,9 @@ export default function PortalPage({
             key={applicantName}
             sx={{ display: tab === applicantIdx + 2 ? "block" : "none" }}
           >
-            {documentRequirements.map((doc) => (
+            {documentRequirements
+              .filter((doc) => isReqForApplicant(doc, applicantName))
+              .map((doc) => (
               <DocumentItem
                 key={doc.id}
                 name={doc.name}
