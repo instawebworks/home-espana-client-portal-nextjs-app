@@ -293,7 +293,7 @@ export default function DocumentItem({
   onSlotChange,
   previousUploads = [],
   fileTypes = [],
-  sectionApprovals = {},
+  sectionApproved = false,
   adminUploads = [],
   submissionLogId = null,
 }) {
@@ -423,7 +423,8 @@ export default function DocumentItem({
           {isFrontBack ? (
             slots.map((slot, idx) => {
               const slotUploads = previousUploads.filter((u) => u.Scan_Type === slot);
-              const slotApproved = sectionApprovals?.[slot.toLowerCase()] === true;
+              // One sign-off covers the whole section, both sides included.
+              const slotApproved = sectionApproved;
               return (
                 <Box key={slot}>
                   {idx > 0 && <Divider sx={{ my: 2.5 }} />}
@@ -460,7 +461,7 @@ export default function DocumentItem({
               acceptStr={acceptStr}
               fileTypes={fileTypes}
               previousUploads={previousUploads}
-              approved={sectionApprovals?.section === true}
+              approved={sectionApproved}
             />
           )}
         </Box>

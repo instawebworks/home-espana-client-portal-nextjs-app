@@ -43,9 +43,9 @@ function getDocStatus(
   documentUploads,
   scanType,
   applicantName,
-  docSectionApproval,
+  sectionApproved,
 ) {
-  if (docSectionApproval?.section === true) return "APPROVED";
+  if (sectionApproved) return "APPROVED";
 
   const rows = (documentUploads ?? []).filter(
     (r) => r.Document_Type === docName && r.Submitted_For === applicantName,
@@ -55,6 +55,43 @@ function getDocStatus(
   if (rows.some((r) => r.Approval_Status === "Pending")) return "PENDING";
   if (rows.every((r) => r.Approval_Status === "Rejected")) return "REJECTED";
   return "PENDING";
+}
+
+// Section_Approvals schema (written by the CRM widget):
+//   { "<Applicant Name>": { "<Section name>": true } }
+// A section shows APPROVED only when the broker has signed it off for that
+// applicant. Legacy entries ({ "<Section>": { section/front/back: true } })
+// predate the per-applicant model and are read as approved for every applicant.
+function normalizeSectionApprovals(raw, applicants) {
+  let parsed = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  if (!parsed || typeof parsed !== "object") return {};
+
+  const names = applicants.map((n) => n.trim());
+  const nameSet = new Set(names);
+  const out = {};
+  const approve = (name, section) => {
+    out[name] = { ...(out[name] ?? {}), [section]: true };
+  };
+
+  Object.entries(parsed).forEach(([key, val]) => {
+    if (!val || typeof val !== "object") return;
+    if (nameSet.has(key.trim())) {
+      Object.entries(val).forEach(([section, v]) => {
+        if (v === true) approve(key.trim(), section);
+      });
+    } else {
+      const done = val.section === true || (val.front === true && val.back === true);
+      if (done) names.forEach((name) => approve(name, key));
+    }
+  });
+  return out;
 }
 
 // A requirement with a non-empty `forApplicants` list is scoped to those applicants
@@ -118,15 +155,11 @@ export default function PortalPage({
   const [reuploadFile, setReuploadFile] = useState(null);
   const [reuploading, setReuploading] = useState(false);
 
-  const sectionApprovalsMap = (() => {
-    const raw = currentLog?.Section_Approvals;
-    if (!raw) return {};
-    try {
-      return typeof raw === "string" ? JSON.parse(raw) : (raw ?? {});
-    } catch {
-      return {};
-    }
-  })();
+  // { "<Applicant Name>": { "<Section name>": true } } — see normalizeSectionApprovals.
+  const sectionApprovalsByApplicant = normalizeSectionApprovals(
+    currentLog?.Section_Approvals,
+    applicants,
+  );
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -798,7 +831,7 @@ export default function PortalPage({
                   currentLog?.Document_Uploads,
                   doc.scanType,
                   applicantName,
-                  sectionApprovalsMap[doc.name],
+                  sectionApprovalsByApplicant[applicantName]?.[doc.name] === true,
                 )}
                 additionalInstructions={doc.additionalInstructions}
                 expanded={expandedId === doc.id}
@@ -815,7 +848,9 @@ export default function PortalPage({
                     u.Submitted_For === applicantName,
                 )}
                 fileTypes={doc.fileTypes ?? []}
-                sectionApprovals={sectionApprovalsMap[doc.name] ?? {}}
+                sectionApproved={
+                  sectionApprovalsByApplicant[applicantName]?.[doc.name] === true
+                }
                 adminUploads={(currentLog?.Admin_Uploads ?? []).filter(
                   (u) =>
                     u.Document_Type === doc.name &&
