@@ -3,18 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, IconButton, TextField, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { useT } from "@/components/I18nProvider";
 
-function formatTime(isoString) {
+// The 12h/24h clock and the month abbreviation both follow the locale, so this
+// takes the dictionary rather than hard-coding en-US/en-GB.
+function formatTime(isoString, t) {
   if (!isoString) return "";
   const date = new Date(isoString);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
-  const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-  if (isToday) return `Today at ${timeStr}`;
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + ` at ${timeStr}`;
+  const timeStr = date.toLocaleTimeString(t.intl, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  if (isToday) return t.messages.todayAt(timeStr);
+  const dateStr = date.toLocaleDateString(t.intl, {
+    day: "2-digit",
+    month: "short",
+  });
+  return t.messages.dateAt(dateStr, timeStr);
 }
 
 export default function MessagesPanel({ submissionLogId: initialLogId, templateId, module, recordId, clientName, initialNotes = [], onLogCreated }) {
+  const t = useT();
   const [notes, setNotes] = useState(initialNotes);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -98,7 +109,7 @@ export default function MessagesPanel({ submissionLogId: initialLogId, templateI
         {notes.length === 0 && (
           <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              No messages yet. Ask a question or send us a note below.
+              {t.messages.empty}
             </Typography>
           </Box>
         )}
@@ -106,7 +117,10 @@ export default function MessagesPanel({ submissionLogId: initialLogId, templateI
 
         {notes.map((note) => {
           const isClient = note.Note_Title === "Client Note";
-          const senderName = isClient ? (clientName ?? "You") : "Admin";
+          // clientName is a real person's name — never translated.
+          const senderName = isClient
+            ? (clientName ?? t.messages.you)
+            : t.messages.admin;
           const timestamp = note.Created_Time;
 
           return (
@@ -139,7 +153,7 @@ export default function MessagesPanel({ submissionLogId: initialLogId, templateI
                 variant="caption"
                 sx={{ mt: 0.5, color: "text.secondary", px: 0.5, fontSize: "0.7rem" }}
               >
-                {formatTime(timestamp)}
+                {formatTime(timestamp, t)}
               </Typography>
             </Box>
           );
@@ -155,7 +169,7 @@ export default function MessagesPanel({ submissionLogId: initialLogId, templateI
           maxRows={4}
           fullWidth
           size="small"
-          placeholder="Write a message..."
+          placeholder={t.messages.placeholder}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {

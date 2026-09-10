@@ -7,7 +7,10 @@ export async function POST(request) {
     const { templateId, module, recordId, submissionLogId, names } = await request.json();
 
     if (!templateId || !module || !recordId || !names?.length) {
-      return Response.json({ error: "Missing required fields" }, { status: 400 });
+      return Response.json(
+        { error: "Missing required fields", code: "MISSING_FIELDS" },
+        { status: 400 },
+      );
     }
 
     const applicantsListing = names.join("; ");
@@ -26,13 +29,19 @@ export async function POST(request) {
       logId = result?.details?.id;
 
       if (!logId) {
-        return Response.json({ error: "Failed to create submission log" }, { status: 500 });
+        return Response.json(
+          { error: "Failed to create submission log", code: "SERVER_ERROR" },
+          { status: 500 },
+        );
       }
     }
 
     return Response.json({ success: true, submissionLogId: logId });
   } catch (err) {
     console.error("[applicants]", err);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return Response.json(
+      { error: "Internal server error", code: "SERVER_ERROR" },
+      { status: 500 },
+    );
   }
 }

@@ -15,9 +15,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { useT } from "@/components/I18nProvider";
 
 export default function LoginForm({ templateId, module, recordId }) {
   const router = useRouter();
+  const t = useT();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -38,14 +40,16 @@ export default function LoginForm({ templateId, module, recordId }) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.");
+        // The API returns a stable `code`; the wording comes from the
+        // dictionary so it is shown in the client's language.
+        setError(t.errors[data.code] ?? t.common.genericError);
         setLoading(false);
         return;
       }
 
       router.push(`/${templateId}/${module}/${recordId}`);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.common.networkError);
       setLoading(false);
     }
   }
@@ -86,10 +90,10 @@ export default function LoginForm({ templateId, module, recordId }) {
         {/* Heading */}
         <Box sx={{ textAlign: "center", mt: 1 }}>
           <Typography variant="h5" fontWeight={700} color="primary">
-            Hipoteken Document Portal
+            {t.brand.portalName}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Sign in to access your documents
+            {t.login.subtitle}
           </Typography>
         </Box>
 
@@ -108,7 +112,7 @@ export default function LoginForm({ templateId, module, recordId }) {
           {error && <Alert severity="error">{error}</Alert>}
 
           <TextField
-            label="Password"
+            label={t.login.password}
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value.trim())}
@@ -122,7 +126,7 @@ export default function LoginForm({ templateId, module, recordId }) {
                   <IconButton
                     onClick={() => setShowPassword((prev) => !prev)}
                     edge="end"
-                    aria-label="toggle password visibility"
+                    aria-label={t.login.togglePassword}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -143,7 +147,7 @@ export default function LoginForm({ templateId, module, recordId }) {
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "Sign In"
+              t.login.submit
             )}
           </Button>
         </Box>

@@ -4,8 +4,12 @@ import { Box, Button, Divider, Typography } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { useT } from "@/components/I18nProvider";
 
 export default function AdminUploadsCard({ adminUploads, submissionLogId, nested = false }) {
+  // Called before the early return — hooks may not sit behind a condition.
+  const t = useT();
+
   if (!adminUploads || adminUploads.length === 0) return null;
 
   function attachmentUrl(upload, download = false) {
@@ -54,10 +58,10 @@ export default function AdminUploadsCard({ adminUploads, submissionLogId, nested
           fontWeight={700}
           sx={{ color: "#92400e", textTransform: "uppercase", letterSpacing: 0.5, flex: 1 }}
         >
-          Admin Reference Documents
+          {t.adminUploads.title}
         </Typography>
         <Typography variant="caption" sx={{ color: "#a16207", fontWeight: 500 }}>
-          {adminUploads.length} file{adminUploads.length !== 1 ? "s" : ""}
+          {t.adminUploads.count(adminUploads.length)}
         </Typography>
       </Box>
 
@@ -107,7 +111,7 @@ export default function AdminUploadsCard({ adminUploads, submissionLogId, nested
                   component="a"
                   sx={{ fontSize: "0.7rem", py: 0.4, px: 1, minWidth: 0, borderColor: "#fcd34d", color: "#92400e", "&:hover": { bgcolor: "#fef3c7", borderColor: "#f59e0b" } }}
                 >
-                  View
+                  {t.common.view}
                 </Button>
                 <Button
                   size="small"
@@ -118,7 +122,7 @@ export default function AdminUploadsCard({ adminUploads, submissionLogId, nested
                   component="a"
                   sx={{ fontSize: "0.7rem", py: 0.4, px: 1, minWidth: 0, color: "text.secondary", borderColor: "divider" }}
                 >
-                  Save
+                  {t.common.save}
                 </Button>
               </Box>
             </Box>

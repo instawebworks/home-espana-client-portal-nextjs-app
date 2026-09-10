@@ -13,7 +13,10 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import AdminUploadsCard from "@/components/AdminUploadsCard";
+import { useT } from "@/components/I18nProvider";
+import Rich from "@/components/Rich";
 
+// Keys stay in the internal English form — only the displayed label is translated.
 const STATUS_COLORS = {
   "NOT SUBMITTED": "#9ca3af",
   PENDING: "#f59e0b",
@@ -36,6 +39,7 @@ function UploadZone({
   previousUploads,
   approved,
 }) {
+  const t = useT();
   const [dragging, setDragging] = useState(false);
   const [fileWarning, setFileWarning] = useState(null);
   const inputRef = useRef(null);
@@ -55,7 +59,9 @@ function UploadZone({
     }
     if (accepted.length > 0) onFilesChange((prev) => [...prev, ...accepted]);
     if (rejected.length > 0)
-      setFileWarning(`Only ${fileTypes.join(", ")} files are allowed. Rejected: ${rejected.join(", ")}`);
+      setFileWarning(
+        t.document.fileTypeWarning(fileTypes.join(", "), rejected.join(", ")),
+      );
   }
 
   function removeFile(index) {
@@ -74,7 +80,7 @@ function UploadZone({
       {previousUploads.length > 0 && (
         <Box sx={{ mb: approved ? 0 : 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Uploaded Files
+            {t.document.uploadedFiles}
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
             {previousUploads.map((upload) => {
@@ -113,7 +119,8 @@ function UploadZone({
                           letterSpacing: 0.5,
                         }}
                       >
-                        {upload.Approval_Status}
+                        {t.approval[upload.Approval_Status] ??
+                          upload.Approval_Status}
                       </Typography>
                     )}
                   </Box>
@@ -133,7 +140,7 @@ function UploadZone({
                         fontWeight={700}
                         sx={{ color: "#dc2626", textTransform: "uppercase", letterSpacing: 0.5 }}
                       >
-                        Admin Comment
+                        {t.document.adminComment}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 0.25, color: "#7f1d1d" }}>
                         {upload.Admin_Comment}
@@ -151,7 +158,7 @@ function UploadZone({
         <>
           {previousUploads.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Uploaded Files
+              {t.document.uploadedFiles}
             </Typography>
           )}
 
@@ -253,7 +260,7 @@ function UploadZone({
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              Drag &amp; drop files here or <strong>Click to browse</strong>
+              <Rich text={t.document.dropzone} />
             </Typography>
           </Box>
 
@@ -297,6 +304,7 @@ export default function DocumentItem({
   adminUploads = [],
   submissionLogId = null,
 }) {
+  const t = useT();
   const allowedExts =
     fileTypes.length > 0 ? new Set(fileTypes.map((t) => t.toLowerCase())) : null;
   const acceptStr = allowedExts
@@ -359,7 +367,7 @@ export default function DocumentItem({
                   lineHeight: 1.4,
                 }}
               >
-                {requirement === "Optional" ? "If Applicable" : requirement}
+                {t.requirement[requirement] ?? requirement}
               </Box>
             )}
           </Box>
@@ -373,7 +381,7 @@ export default function DocumentItem({
               whiteSpace: "nowrap",
             }}
           >
-            {status}
+            {t.status[status] ?? status}
           </Typography>
         </Box>
       </AccordionSummary>
@@ -439,7 +447,8 @@ export default function DocumentItem({
                       letterSpacing: 1,
                     }}
                   >
-                    {slot} Side{slotApproved ? " — Approved" : ""}
+                    {t.scan[slot] ?? slot}
+                    {slotApproved ? t.document.approvedSuffix : ""}
                   </Typography>
                   <UploadZone
                     files={fileSlots[slot] ?? []}

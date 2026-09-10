@@ -21,6 +21,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { useT } from "@/components/I18nProvider";
 
 const SPECIAL_CHARS = "!@#$%&*";
 
@@ -34,16 +35,18 @@ function getValidations(password) {
   };
 }
 
-const CRITERIA = [
-  { key: "length", label: "12+ characters" },
-  { key: "upper", label: "Uppercase letter" },
-  { key: "lower", label: "Lowercase letter" },
-  { key: "number", label: "Number" },
-  { key: "special", label: `Special character (${SPECIAL_CHARS})` },
-];
+// Order only — the wording lives in the dictionary so it can be translated.
+const CRITERIA_KEYS = ["length", "upper", "lower", "number", "special"];
+
+function criterionLabel(t, key) {
+  const entry = t.changePassword.criteria[key];
+  // `special` needs the character list interpolated into it.
+  return typeof entry === "function" ? entry(SPECIAL_CHARS) : entry;
+}
 
 export default function ChangePasswordForm({ templateId, module, recordId, currentPassword }) {
   const router = useRouter();
+  const t = useT();
   const [oldPassword, setOldPassword] = useState(currentPassword);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -71,13 +74,13 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to change password. Please try again.");
+        setError(t.errors[data.code] ?? t.changePassword.failed);
         setSubmitting(false);
         return;
       }
       router.push(`/${templateId}/${module}/${recordId}/login`);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.common.networkError);
       setSubmitting(false);
     }
   }
@@ -95,17 +98,17 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
         }}
       >
         <Typography variant="h4" fontWeight={700} color="text.primary">
-          Hipoteken Document Portal
+          {t.brand.portalName}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-          Change Password
+          {t.changePassword.title}
         </Typography>
       </Box>
 
       <Box sx={{ maxWidth: 480, mx: "auto", px: 2, py: 4 }}>
         <Paper variant="outlined" sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
-            Change Password
+            {t.changePassword.title}
           </Typography>
 
           {error && (
@@ -117,7 +120,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
           <Box component="form" onSubmit={handleSubmit} noValidate>
             {/* Current password */}
             <TextField
-              label="Current Password"
+              label={t.changePassword.current}
               type={showOld ? "text" : "password"}
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
@@ -137,7 +140,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
 
             {/* New password */}
             <TextField
-              label="New Password"
+              label={t.changePassword.new}
               type={showNew ? "text" : "password"}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -145,7 +148,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
               required
               sx={{ mb: 1 }}
               error={sameAsOld}
-              helperText={sameAsOld ? "New password must be different from the current password" : ""}
+              helperText={sameAsOld ? t.changePassword.sameAsOld : ""}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -160,7 +163,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
             {/* Validation checklist */}
             {newPassword.length > 0 && (
               <List dense disablePadding sx={{ mb: 2, pl: 1 }}>
-                {CRITERIA.map(({ key, label }) => {
+                {CRITERIA_KEYS.map((key) => {
                   const met = validations[key];
                   return (
                     <ListItem key={key} disableGutters sx={{ py: 0.25 }}>
@@ -172,7 +175,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
                         )}
                       </ListItemIcon>
                       <ListItemText
-                        primary={label}
+                        primary={criterionLabel(t, key)}
                         primaryTypographyProps={{
                           variant: "caption",
                           color: met ? "success.main" : "text.secondary",
@@ -186,7 +189,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
 
             {/* Confirm password */}
             <TextField
-              label="Confirm New Password"
+              label={t.changePassword.confirm}
               type={showConfirm ? "text" : "password"}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -194,7 +197,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
               required
               sx={{ mb: 3 }}
               error={confirmPassword.length > 0 && !passwordsMatch}
-              helperText={confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : ""}
+              helperText={confirmPassword.length > 0 && !passwordsMatch ? t.changePassword.mismatch : ""}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -213,7 +216,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
                 onClick={() => router.push(`/${templateId}/${module}/${recordId}`)}
                 disabled={submitting}
               >
-                Cancel
+                {t.common.cancel}
               </Button>
               <Button
                 type="submit"
@@ -221,7 +224,7 @@ export default function ChangePasswordForm({ templateId, module, recordId, curre
                 fullWidth
                 disabled={!allValid || !passwordsMatch || sameAsOld || submitting}
               >
-                {submitting ? <CircularProgress size={22} color="inherit" /> : "Update Password"}
+                {submitting ? <CircularProgress size={22} color="inherit" /> : t.changePassword.submit}
               </Button>
             </Box>
           </Box>

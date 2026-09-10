@@ -7,6 +7,8 @@ import {
   ZOHO_TEMPLATE_MODULE,
 } from "@/lib/zoho/crm";
 import { REQUIRED_INFO_PREFIX } from "@/lib/constants";
+import { resolveLocale } from "@/lib/i18n";
+import { I18nProvider } from "@/components/I18nProvider";
 import PortalPage from "./PortalPage";
 
 export const SUBMISSION_LOGS_MODULE = "Submission_Logs";
@@ -60,15 +62,17 @@ export default async function Page({ params, searchParams }) {
     : JSON.parse(templateRecord.Template_JSON);
 
   return (
-    <PortalPage
-      templateId={templateId}
-      module={module}
-      recordId={recordId}
-      templateJson={templateJson}
-      crmRecord={crmRecord}
-      submissionLog={submissionLog}
-      initialNotes={initialNotes}
-      requiredInfoUploads={requiredInfoUploads}
-    />
+    <I18nProvider locale={resolveLocale(crmRecord)}>
+      <PortalPage
+        templateId={templateId}
+        module={module}
+        recordId={recordId}
+        templateJson={templateJson}
+        crmRecord={crmRecord}
+        submissionLog={submissionLog}
+        initialNotes={initialNotes}
+        requiredInfoUploads={requiredInfoUploads}
+      />
+    </I18nProvider>
   );
 }

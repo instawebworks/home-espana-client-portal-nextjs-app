@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getRecord, ZOHO_TEMPLATE_MODULE } from "@/lib/zoho/crm";
+import { resolveLocale } from "@/lib/i18n";
+import { I18nProvider } from "@/components/I18nProvider";
 import ChangePasswordForm from "./ChangePasswordForm";
 
 export default async function ChangePasswordPage({ params }) {
@@ -17,11 +19,13 @@ export default async function ChangePasswordPage({ params }) {
   const currentPassword = passwordFieldApi ? (crmRecord[passwordFieldApi] ?? "") : "";
 
   return (
-    <ChangePasswordForm
-      templateId={templateId}
-      module={module}
-      recordId={recordId}
-      currentPassword={currentPassword}
-    />
+    <I18nProvider locale={resolveLocale(crmRecord)}>
+      <ChangePasswordForm
+        templateId={templateId}
+        module={module}
+        recordId={recordId}
+        currentPassword={currentPassword}
+      />
+    </I18nProvider>
   );
 }

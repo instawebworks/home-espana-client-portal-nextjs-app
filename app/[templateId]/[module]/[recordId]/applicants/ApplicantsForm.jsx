@@ -14,11 +14,13 @@ import {
 } from "@mui/material";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import { useT } from "@/components/I18nProvider";
 
 const MAX_APPLICANTS = 5;
 
 export default function ApplicantsForm({ templateId, module, recordId, submissionLogId }) {
   const router = useRouter();
+  const t = useT();
   const [step, setStep] = useState(1);
   const [count, setCount] = useState(null);
   const [names, setNames] = useState([]);
@@ -39,7 +41,7 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
     e.preventDefault();
     const trimmed = names.map((n) => n.trim());
     if (trimmed.some((n) => !n)) {
-      setError("Please fill in all applicant names.");
+      setError(t.applicants.missingNames);
       return;
     }
     setError(null);
@@ -52,13 +54,13 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(t.errors[data.code] ?? t.common.genericError);
         setSubmitting(false);
         return;
       }
       router.push(`/${templateId}/${module}/${recordId}?lid=${data.submissionLogId}`);
     } catch {
-      setError("Network error. Please try again.");
+      setError(t.common.networkError);
       setSubmitting(false);
     }
   }
@@ -97,10 +99,10 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
 
         <Box sx={{ textAlign: "center" }}>
           <Typography variant="h5" fontWeight={700} color="primary">
-            Hipoteken Document Portal
+            {t.brand.portalName}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Before we begin, tell us about the applicants
+            {t.applicants.subtitle}
           </Typography>
         </Box>
 
@@ -110,11 +112,11 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
               <GroupsIcon color="primary" />
               <Typography variant="subtitle1" fontWeight={700}>
-                How many applicants?
+                {t.applicants.countHeading}
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-              How many people are submitting documents for this application?
+              {t.applicants.countHelp}
             </Typography>
             <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
               {Array.from({ length: MAX_APPLICANTS }, (_, i) => i + 1).map((n) => (
@@ -144,19 +146,18 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
               <PersonOutlineIcon color="primary" />
               <Typography variant="subtitle1" fontWeight={700}>
-                Applicant {count === 1 ? "Name" : "Names"}
+                {t.applicants.namesHeading(count)}
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-              Please enter the full name of{" "}
-              {count === 1 ? "the applicant" : `each of the ${count} applicants`}.
+              {t.applicants.namesHelp(count)}
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {names.map((name, i) => (
                 <TextField
                   key={i}
-                  label={`Applicant ${i + 1} — Full Name`}
+                  label={t.applicants.nameLabel(i + 1)}
                   value={name}
                   onChange={(e) => handleNameChange(i, e.target.value)}
                   required
@@ -179,7 +180,7 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
                 disabled={submitting}
                 sx={{ minWidth: 90 }}
               >
-                Back
+                {t.common.back}
               </Button>
               <Button
                 type="submit"
@@ -189,7 +190,7 @@ export default function ApplicantsForm({ templateId, module, recordId, submissio
                 disabled={submitting}
                 sx={{ py: 1.5, fontWeight: 600 }}
               >
-                {submitting ? <CircularProgress size={24} color="inherit" /> : "Continue to Portal"}
+                {submitting ? <CircularProgress size={24} color="inherit" /> : t.applicants.submit}
               </Button>
             </Box>
           </Box>

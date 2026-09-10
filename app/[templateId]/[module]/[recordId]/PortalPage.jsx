@@ -17,19 +17,22 @@ import DownloadIcon from "@mui/icons-material/Download";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionIcon from "@mui/icons-material/Description";
-import EditNoteIcon from "@mui/icons-material/EditNote";
+// Temporarily unused — only Option 2 (hidden at the client's request) uses this.
+// import EditNoteIcon from "@mui/icons-material/EditNote";
 import DocumentItem from "@/components/DocumentItem";
 import MessagesPanel from "@/components/MessagesPanel";
+import { useT } from "@/components/I18nProvider";
+import Rich from "@/components/Rich";
 
 function getFirstName(fullName) {
   return fullName.split(" ")[0];
 }
 
-function formatUploadDate(value) {
+function formatUploadDate(value, intl) {
   if (!value) return "";
   const d = new Date(value);
   if (isNaN(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intl, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -138,11 +141,13 @@ export default function PortalPage({
 
   // Zoho webform (Option 2). The Deal ID is passed as `id` so the submission
   // can be linked back to this record.
-  const webformUrl = `https://forms.zohopublic.eu/Hipoteken/form/Requiredinformation1/formperma/pjyGLWLvEkK4-n98pKWe1yjfMS3evvivEKhIyJ9IaPg?id=${encodeURIComponent(
-    recordId,
-  )}`;
+  // Hidden at the client's request — restore together with the Option 2 block below.
+  // const webformUrl = `https://forms.zohopublic.eu/Hipoteken/form/Requiredinformation1/formperma/pjyGLWLvEkK4-n98pKWe1yjfMS3evvivEKhIyJ9IaPg?id=${encodeURIComponent(
+  //   recordId,
+  // )}`;
 
   const router = useRouter();
+  const t = useT();
   const [tab, setTab] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   // { [applicantIdx]: { [docId]: { [slot]: File[] } } }
@@ -188,7 +193,7 @@ export default function PortalPage({
       setReuploadFile(null);
       setSnackbar({
         open: true,
-        message: "Your completed form has been uploaded. Thank you!",
+        message: t.applicationForm.uploadOk,
         severity: "success",
       });
       // Re-fetch server data so the newly uploaded form shows in the list.
@@ -196,7 +201,7 @@ export default function PortalPage({
     } catch {
       setSnackbar({
         open: true,
-        message: "Sorry, the upload failed. Please try again.",
+        message: t.applicationForm.uploadFail,
         severity: "error",
       });
     } finally {
@@ -246,7 +251,7 @@ export default function PortalPage({
       0,
     );
     if (totalFiles === 0) {
-      setSubmitError("Please attach at least one file before submitting.");
+      setSubmitError(t.portal.submit.noFiles);
       return;
     }
 
@@ -268,7 +273,7 @@ export default function PortalPage({
       if (!res.ok) {
         setSnackbar({
           open: true,
-          message: "Submission failed. Please try again.",
+          message: t.portal.submit.failed,
           severity: "error",
         });
         return;
@@ -311,7 +316,7 @@ export default function PortalPage({
       if (!uploadRes.ok) {
         setSnackbar({
           open: true,
-          message: "Files could not be uploaded. Please try again.",
+          message: t.portal.submit.uploadFailed,
           severity: "error",
         });
         return;
@@ -325,7 +330,7 @@ export default function PortalPage({
       if (logRes.ok) setCurrentLog(logData.record);
       setSnackbar({
         open: true,
-        message: "Documents submitted successfully!",
+        message: t.portal.submit.ok,
         severity: "success",
       });
     } finally {
@@ -353,10 +358,10 @@ export default function PortalPage({
           color="text.primary"
           sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
         >
-          Hipoteken Document Portal
+          {t.brand.portalName}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-          Please upload / review the required documents below
+          {t.portal.tagline}
         </Typography>
         <Button
           size="small"
@@ -373,7 +378,7 @@ export default function PortalPage({
             transform: { sm: "translateY(-50%)" },
           }}
         >
-          Change Password
+          {t.portal.changePassword}
         </Button>
       </Box>
 
@@ -382,7 +387,7 @@ export default function PortalPage({
         {/* Welcome */}
         <Paper variant="outlined" sx={{ px: 3, py: 2, mb: 2.5 }}>
           <Typography variant="subtitle1" fontWeight={700}>
-            Welcome, {clientName}!
+            {t.portal.welcome(clientName)}
           </Typography>
         </Paper>
 
@@ -394,13 +399,31 @@ export default function PortalPage({
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
+            // Translated tab labels run much longer than the English ones
+            // (Spanish needs ~920px of the ~768px available at default sizing),
+            // which pushed the strip into scroll mode and cost another 80px to
+            // the scroll arrows. Sentence case instead of MUI's default
+            // uppercase, plus tighter padding, buys back enough width for the
+            // usual one- or two-applicant case in all four languages.
+            sx={{
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+                fontWeight: 600,
+                minWidth: "auto",
+                px: { xs: 1.25, sm: 1.5 },
+              },
+            }}
           >
-            <Tab label="Instructions" />
-            <Tab label="Application Form" />
+            <Tab label={t.portal.tabs.instructions} />
+            <Tab label={t.portal.tabs.applicationForm} />
             {applicants.map((name) => (
-              <Tab key={name} label={`${getFirstName(name)}'s Documents`} />
+              <Tab
+                key={name}
+                label={t.portal.tabs.applicant(getFirstName(name))}
+              />
             ))}
-            <Tab label="Messages" />
+            <Tab label={t.portal.tabs.messages} />
           </Tabs>
         </Box>
 
@@ -409,8 +432,18 @@ export default function PortalPage({
           {/* ── Part 1: Required information intro ── */}
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="h6" fontWeight={700} gutterBottom>
-              Hi {greetingName || "there"},
+              {greetingName
+                ? t.applicationForm.greeting(greetingName)
+                : t.applicationForm.greetingNoName}
             </Typography>
+            {/* Single-option copy while Option 2 (webform) is hidden — see the
+                commented-out Part 3 block below. */}
+            <Typography variant="body2" color="text.secondary">
+              <Rich text={t.applicationForm.intro} />
+            </Typography>
+
+            {/* ── Two-option intro — restore alongside the Option 2 block ──
+
             <Typography variant="body2" color="text.secondary">
               Here's the information we need from you to ensure your details are
               correct before sharing them with the banks. To give us that
@@ -440,6 +473,8 @@ export default function PortalPage({
             >
               You only need to complete one of these two options.
             </Typography>
+
+            ── end two-option intro ── */}
           </Paper>
 
           {/* ── Part 2: Preuploaded document (download / re-upload) ── */}
@@ -457,7 +492,7 @@ export default function PortalPage({
             >
               <DescriptionIcon fontSize="small" />
               <Typography variant="subtitle1" fontWeight={700}>
-                Option 1 — Download, fill in &amp; re-upload the form
+                {t.applicationForm.option1Title}
               </Typography>
             </Box>
 
@@ -483,24 +518,23 @@ export default function PortalPage({
                 </Box>
                 <Box>
                   <Typography variant="body2" fontWeight={600} gutterBottom>
-                    Download the form
+                    {t.applicationForm.step1Title}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mb: 1.5 }}
                   >
-                    Open the form, then fill in your details. You can complete it
-                    on your computer or print it and fill it in by hand.
+                    {t.applicationForm.step1Body}
                   </Typography>
                   <Button
                     variant="outlined"
                     startIcon={<DownloadIcon />}
                     component="a"
                     href="/credit-application-form.pdf"
-                    download="Hipoteken Application Form.pdf"
+                    download={t.applicationForm.downloadFileName}
                   >
-                    Download the form
+                    {t.applicationForm.step1Button}
                   </Button>
                 </Box>
               </Box>
@@ -526,15 +560,14 @@ export default function PortalPage({
                 </Box>
                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight={600} gutterBottom>
-                    Upload your completed form
+                    {t.applicationForm.step2Title}
                   </Typography>
                   <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{ mb: 1.5 }}
                   >
-                    Once you've filled it in, upload the completed file (PDF) back
-                    to us here.
+                    {t.applicationForm.step2Body}
                   </Typography>
 
                   {/* Already-uploaded forms */}
@@ -556,9 +589,7 @@ export default function PortalPage({
                         fontWeight={700}
                         sx={{ display: "block", mb: 0.5 }}
                       >
-                        {requiredInfoUploads.length === 1
-                          ? "Form received"
-                          : "Forms received"}
+                        {t.applicationForm.received(requiredInfoUploads.length)}
                       </Typography>
                       {requiredInfoUploads.map((f) => (
                         <Box
@@ -581,7 +612,7 @@ export default function PortalPage({
                               variant="caption"
                               color="text.secondary"
                             >
-                              {formatUploadDate(f.time)}
+                              {formatUploadDate(f.time, t.intl)}
                             </Typography>
                           )}
                         </Box>
@@ -605,9 +636,7 @@ export default function PortalPage({
                         component="label"
                         startIcon={<UploadFileIcon />}
                       >
-                        {reuploadFile
-                          ? "Choose a different file"
-                          : "Choose your filled form"}
+                        {t.applicationForm.chooseFile(Boolean(reuploadFile))}
                         <input
                           type="file"
                           hidden
@@ -628,7 +657,9 @@ export default function PortalPage({
                             onClick={handleRequiredInfoReupload}
                             disabled={reuploading}
                           >
-                            {reuploading ? "Uploading…" : "Upload completed form"}
+                            {reuploading
+                              ? t.applicationForm.uploading
+                              : t.applicationForm.uploadButton}
                           </Button>
                         </>
                       )}
@@ -639,7 +670,11 @@ export default function PortalPage({
             </Box>
           </Paper>
 
-          {/* ── Part 3: Online webform ── */}
+          {/* ── Part 3: Online webform ──
+              HIDDEN at the client's request (temporary). To restore, uncomment
+              this block along with the `webformUrl` const and the EditNoteIcon
+              import above, and put option 2 back in the Part 1 intro copy.
+
           <Paper variant="outlined" sx={{ p: 0, mb: 2, overflow: "hidden" }}>
             <Box
               sx={{
@@ -678,6 +713,8 @@ export default function PortalPage({
             </Box>
           </Paper>
 
+          ── end hidden Option 2 ── */}
+
         </Box>
 
         {/* Instructions tab */}
@@ -687,129 +724,72 @@ export default function PortalPage({
             color="text.secondary"
             sx={{ display: "block", mb: 1 }}
           >
-            Using the rest of the portal
+            {t.instructions.overline}
           </Typography>
 
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Navigating the portal
+              {t.instructions.nav.title}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Each applicant has their own tab (for example{" "}
-              <strong>John's Documents</strong> and{" "}
-              <strong>Ana's Documents</strong>). Open the tab for the applicant
-              whose documents you're uploading, then click any document row to
-              expand it and see what's needed.
+              <Rich text={t.instructions.nav.body} />
             </Typography>
           </Paper>
 
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Document status
+              {t.instructions.status.title}
             </Typography>
             <Box
               component="ul"
               sx={{ pl: 2.5, m: 0, color: "text.secondary" }}
             >
-              <li>
-                <Typography variant="body2" component="span">
-                  <strong>NOT SUBMITTED</strong> — nothing uploaded yet.
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  <strong>PENDING</strong> — uploaded and waiting for our review.
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  <strong>APPROVED</strong> — accepted by our team, nothing
-                  more needed.
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  <strong>REJECTED</strong> — please check the note from our
-                  team and upload a corrected file.
-                </Typography>
-              </li>
+              {["notSubmitted", "pending", "approved", "rejected"].map((key) => (
+                <li key={key}>
+                  <Typography variant="body2" component="span">
+                    <Rich text={t.instructions.status[key]} />
+                  </Typography>
+                </li>
+              ))}
             </Box>
           </Paper>
 
           <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Uploading documents
+              {t.instructions.uploading.title}
             </Typography>
             <Box
               component="ol"
               sx={{ pl: 2.5, m: 0, color: "text.secondary" }}
             >
-              <li>
-                <Typography variant="body2" component="span">
-                  Open the tab for the applicant the document belongs to.
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  Click a document row to expand it.
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  Choose the file(s) for each side (front / back, where
-                  applicable).
-                </Typography>
-              </li>
-              <li>
-                <Typography variant="body2" component="span">
-                  When you've selected everything you'd like to send, click{" "}
-                  <strong>Submit Documents</strong> at the bottom of the page.
-                </Typography>
-              </li>
+              {["step1", "step2", "step3", "step4"].map((key) => (
+                <li key={key}>
+                  <Typography variant="body2" component="span">
+                    <Rich text={t.instructions.uploading[key]} />
+                  </Typography>
+                </li>
+              ))}
             </Box>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mt: 1.5 }}
             >
-              You can prepare uploads for more than one applicant in the same
-              submission — your selections are kept as you switch between tabs.
+              {t.instructions.uploading.note}
             </Typography>
           </Paper>
 
-          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Reference documents from our team
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              If our team has shared example or reference files for a
-              particular document, you'll see them in an amber section inside
-              that document. You can view them online or save a copy.
-            </Typography>
-          </Paper>
-
-          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Messages
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Use the <strong>Messages</strong> tab to chat with our team if
-              you have any questions about a document or the application
-              overall — we'll reply here.
-            </Typography>
-          </Paper>
-
-          <Paper variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Password & security
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Use <strong>Change Password</strong> at the top right if you'd
-              like to update your portal password. For your security, your
-              session expires after 30 minutes of inactivity — just log in
-              again to continue.
-            </Typography>
-          </Paper>
+          {/* Remaining panels are all plain title + body. */}
+          {["reference", "messages", "security"].map((key) => (
+            <Paper key={key} variant="outlined" sx={{ px: 3, py: 2.5, mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                {t.instructions[key].title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <Rich text={t.instructions[key].body} />
+              </Typography>
+            </Paper>
+          ))}
         </Box>
 
         {/* Applicant document tabs */}
@@ -879,7 +859,7 @@ export default function PortalPage({
               onClick={handleSubmit}
               disabled={submitting}
             >
-              {submitting ? "Submitting..." : "Submit Documents"}
+              {submitting ? t.portal.submit.busy : t.portal.submit.label}
             </Button>
           </Box>
         )}
